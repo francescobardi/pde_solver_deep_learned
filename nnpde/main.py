@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 # <nbformat>4</nbformat>
 
+# <codecell>
+
+def fix_layout(width:int=95):
+    from IPython.core.display import display, HTML
+    display(HTML('<style>.container { width:' + str(width) + '% !important; }</style>'))
+    
+fix_layout()
+
 # <markdowncell>
 
 # # Notes
@@ -34,32 +42,124 @@
 
 # <codecell>
 
-from sklearn.metrics import mean_squared_error
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 # <codecell>
 
-def inner_jacoby(u):
-    raise NotImplementedError
-    pass
-
-
-def reset_boundaries(u, boundaries):
-    raise NotImplementedError
-    pass
-    
-    
-def jacoby_step(u, H):
-    raise NotImplementedError
-    w = inner_jacoby(u) - u
-    return reset_boundaries(inner_jacoby(u) + np.dot(H, w))
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        
+        # should be `nn.Conv2d(???, ???, 3, bias=False)` in our case
+        self.conv1 = nn.Conv2d(1, 1, 3, bias=False) 
+        
+    def forward(self, x):
+        x = self.conv1(x)
+        
+        return x
 
 # <codecell>
 
-def our_loss(y_true, y_pred):
-    """y_true is the u*
-    y_pred is H
-    """
-    raise NotImplementedError
+from nnpde.functions import iterativeMethods as im
+import numpy as np
+
+# <codecell>
+
+N = 10
+a = np.ones(N**2)
+b = -np.ones(N**2-1)*0.25
+c = -np.ones(N**2-N)*0.25
+
+A = np.diag(a) + np.diag(b, 1) + np.diag(b, -1) + np.diag(c, N) + np.diag(c, -N)
+
+
+b_top_idx = np.arange(N)
+b_bottom_idx = np.arange(N**2-N, N**2)
+b_left_idx = np.linspace(N, N**2-2*N, N-2, dtype = int)
+b_right_idx = np.linspace(2*N-1, N**2-N, N-2, dtype = int)
+
+b_idx = np.append(b_top_idx, b_bottom_idx)
+b_idx = np.append(b_idx, b_left_idx)
+b_idx = np.append(b_idx, b_right_idx)
+b = np.ones(np.shape(b_idx))*1
+f = np.zeros(N**2)
+
+u, res = im.jacobi(A, f, b_idx = b_idx, b = b, max_iters=200,tol = 1e-2)
+
+# <codecell>
+
+u
+
+# <codecell>
+
+T = torch.eye(N**2) - torch.from_numpy(A).float()
+G = torch.eye(N**2) 
+
+def reset_boundaries(X, G=G):
+    # TODO 
+    return X
+
+
+def iterator_step(H, T=T, G=G):
+    return reset_boundaries(T + H@T - H, G=G)
     
-    # TODO how to get u?
-    return mean_squared_error(y_true, jacoby_step(u, y_pred))
+    
+def iterations(u0, k, H, T=T, G=G):
+    X = iterator_step(H, T=T, G=G)
+    return F.reduce(lambda acc, el: el(acc), [(lambda u: X.mm(u)) for _ in range(k)], u0)
+
+
+class CustLoss(nn.Module):
+    def __init__(self, u_stars, k=5):
+        super(CustLoss, self).__init__()
+        
+        self.k = k
+        # should be u0 and u*
+        # TODO `0` is the initial value, is this correct?
+        self.u_stars = [(0, u_star) for u_star in u_stars]
+        
+    def forward(self, yPred, yTrue):
+        # we don't care about y, as this would be y_true??? or is it x???
+        
+        H = torch.from_numpy(yPred).requires_grad(True)
+    
+        # since we doing for all u_stars we can do it probably in a better way (vectorised)
+        return torch.sum[(torch.abs(iterations(u0, k=self.k, H=yPred) - u_star) for u0, u_star in self.u_stars)]
+
+# <codecell>
+
+loss_fn = CustLoss(u)
+
+
+prediction = jacobi(A, b, H)
+loss = loss_fn(prediction, ground_truth)
+loss.backward()
+optimizer.step()
+H.zero_grad() # H is the model
+
+# <codecell>
+
+net = Net()
+
+# <codecell>
+
+net
+
+# <codecell>
+
+input = torch.ones(1, 1, 5, 5) # what to pluck here???
+out = net(input)
+
+# <codecell>
+
+out
+
+# <codecell>
+
+out
+
+# <codecell>
+
+
