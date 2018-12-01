@@ -2,7 +2,7 @@
 import logging
 
 import numpy as np
-from .helpers import check_dimensions
+from helpers import check_dimensions
 
 def jacobi(A, f, initial_u = None, b_idx = None, b = None, max_iters = 1000, tol = 1e-3):
     """Solve the least squares equation by the method of gradient descent.
