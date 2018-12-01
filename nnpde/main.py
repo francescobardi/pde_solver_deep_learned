@@ -138,12 +138,16 @@ def reset_boundaries(X, G=G):
 def iterator_step(H, T=T, G=G):
     """will define the matrix computation"""
     return reset_boundaries(T + H@T - H, G=G)
-    
+
+
+def apply_fn_n_times(fn, n, x):
+    # this is basically a fold-left, the iterator step will be applied n times: fn(fn(fn(... (fn(u0)))))
+    return F.reduce(lambda x_, _: fn(x_), range(n), x)
+
     
 def solver_with_H(u0, k, H, T=T, G=G):
     X = iterator_step(H, T=T, G=G)
-    # this is basically a fold-left, the iterator step will be applied k times: X(X(X(... (X(u0)))))
-    return F.reduce(lambda acc, el: el(acc), [(lambda u: X.mm(u)) for _ in range(k)], u0)
+    return apply_fn_n_times(lambda u_: X.mm(u), k, u0)
 
 
 class CustLoss(nn.Module):
