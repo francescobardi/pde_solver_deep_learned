@@ -2,6 +2,10 @@
 import logging
 
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from helpers import check_dimensions
 
 def jacobi(A, f, initial_u = None, b_idx = None, b = None, max_iters = 1000, tol = 1e-3):
@@ -87,4 +91,164 @@ def jacobi(A, f, initial_u = None, b_idx = None, b = None, max_iters = 1000, tol
 
     logging.warning("Maximum number of iterations exceeded, stopping criteria not satisified. Norm of residuals vector at last iteration is {0}.\n".format(np.linalg.norm(res)))
     return u, res
+
+
+def reset_operator(u, B_idx, B):
+    """ Reset values at the boundary of the domain
+
+
+    Parameters
+    ----------
+    u : tensor-like, shape = [*, *, n, n]
+        variable to reset.
+
+    B_idx : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: 1.0 for inner points 0.0 elsewhere.
+
+    B : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: desired values for boundary points 0.0 elsewhere.
+
+    Returns
+    -------
+    u : tensor-like, shape = [*, *, n, n]
+        resetted values.
+
+
+    """    
+    
+    u = u * B_idx + B
+    
+    return u
+
+def jacobi_iteration(u, B_idx, B, f):
+    """ Compute one jacobi method iteration, by applying convolution
+
+
+    Parameters
+    ----------
+    u : tensor-like, shape = [*, *, n, n]
+        variable to reset.
+
+    B_idx : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: 1.0 for inner points 0.0 elsewhere.
+
+    B : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: desired values for boundary points 0.0 elsewhere.
+    
+    f : tensor-like, shape = [*, *, n, n]
+        matrix describing the forcing term.
+
+
+    Returns
+    -------
+    u : tensor-like, shape = [*, *, n, n]
+        resetted values.
+
+
+    """  
+    
+    net = nn.Conv2d(1, 1, 3, padding = 1, bias = False)
+   
+    initial_weights = torch.zeros(1,1,3,3)
+    initial_weights[0,0,0,1] = 0.25
+    initial_weights[0,0,2,1] = 0.25
+    initial_weights[0,0,1,0] = 0.25
+    initial_weights[0,0,1,2] = 0.25
+    net.weight = nn.Parameter(initial_weights)
+    
+    for param in net.parameters():
+        param.requires_grad = False
+    
+    
+    u = net(u) + f
+    u = reset_operator(u, B_idx, B)
+    
+    return u
+    
+
+def jacobi_method(B_idx, B, f, initial_u = None, k = 1000):
+    """ Compute jacobi method solution by convolution
+
+
+    Parameters
+    ----------
+
+    B_idx : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: 1.0 for inner points 0.0 elsewhere.
+
+    B : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: desired values for boundary points 0.0 elsewhere.
+    
+    f : tensor-like, shape = [*, *, n, n]
+        matrix describing the forcing term.
+
+    initial_u : tensor-like, shape = [*, *, n, n]
+        Initial values.
+
+    Returns
+    -------
+    u : tensor-like, shape = [*, *, n, n]
+        solution matrix.
+
+
+    """  
+    # Initialization
+    N = B_idx.size()[3]
+    
+    # Set initial solution vector
+    if initial_u is None:
+        u = torch.zeros(1 ,1 , N, N)
+    else:
+        u = initial_u    
+    
+    # Reset values at the boundaries
+    u = reset_operator(u, B_idx, B)
+    
+    # Solution loop
+    for n_iter in range(k):
+        u = jacobi_iteration(u, B_idx, B, f)
+    
+    return u
+
+def H_method(net, B_idx, B, f, initial_u = None, k = 1000):
+    """ Compute solution by H method
+
+
+    Parameters
+    ----------
+    net = neural network rappresenting H
+    
+    B_idx : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: 1.0 for inner points 0.0 elsewhere.
+
+    B : tensor-like, shape = [*, *, n, n]
+        matrix describing the domain: desired values for boundary points 0.0 elsewhere.
+    
+    f : tensor-like, shape = [*, *, n, n]
+        matrix describing the forcing term.
+
+    initial_u : tensor-like, shape = [*, *, n, n]
+        Initial values.
+
+    Returns
+    -------
+    u : tensor-like, shape = [*, *, n, n]
+        solution matrix.
+
+
+    """
+    
+    # Reset values at boundaries
+    u = reset_operator(initial_u, B_idx, B)
+    
+    # Solution loop
+    for n_iter in range(k):
+        jac_it = jacobi_iteration(u, B_idx, B, f)
+        w = jac_it - u
+        u = jac_it + net(jac_it - u) * B_idx
+        u = reset_operator(u, B_idx, B)
+        
+    
+    return u
+
 
