@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 #from logs import enable_logging, logging 
 from importlib import reload
 import nnpde.functions.iterative_methods as im
+from nnpde.functions import geometries
 
 # <codecell>
 
@@ -51,8 +52,7 @@ losses = []
 
 # <codecell>
 
-some_tensor = torch.randn(1, 1, 16, 16)
-some_tensor
+reload(H)
 
 # <codecell>
 
@@ -65,15 +65,7 @@ for _ in range(20):
     # Sample k
     k = np.random.randint(1, 20)
     
-    # Define geometry 1.0 inner points 0.0 elsewhre
-    B_idx = torch.ones(1,1,N,N)
-    B_idx[0,0,0,:] = torch.zeros(N)
-    B_idx[0,0,N-1,:] = torch.zeros(N)
-    B_idx[0,0,:,0] = torch.zeros(N)
-    B_idx[0,0,:,N-1] = torch.zeros(N)
-    
-    # Define boundary values
-    B = torch.abs(B_idx-1)*np.random.rand()*3
+    B, B_idx = geometries.square_geometry(N)
     
     # Initialize f: we use a zero forcing term for training
     f = torch.zeros(1, 1, N, N)
@@ -85,6 +77,7 @@ for _ in range(20):
     ground_truth = im.jacobi_method(B_idx, B, f, initial_u = None, k = 1000)
 
     # Solve the same problem, at each iteration the only thing changing are the weights, which are optimized
+    # TODO why though? wouldn't it make much more sense to train it more times on different problems? isn't this the same as oversampling each training sample?
     for _ in range(20):
         
         # Compute the solution with the updated weights
@@ -147,15 +140,7 @@ print("final loss is {0}".format(losses[-1]))
 
 N = 50
 
-# Define geometry 1.0 inner points 0.0 elsewhre
-B_idx = torch.ones(1,1,N,N)
-B_idx[0,0,0,:] = torch.zeros(N)
-B_idx[0,0,N-1,:] = torch.zeros(N)
-B_idx[0,0,:,0] = torch.zeros(N)
-B_idx[0,0,:,N-1] = torch.zeros(N)
-
-# Define boundary values
-B = torch.abs(B_idx-1)*4.0
+B, B_idx = geometries.square_geometry(N)
 
 # Set forcing term
 f = torch.ones(1,1,N,N)*1.0
@@ -192,18 +177,7 @@ plt.show()
 
 # <codecell>
 
-N = 50
-M = int(np.floor(N/2))
-
-# Define geometry 1.0 inner points 0.0 elsewhre
-B_idx = torch.ones(1, 1, N, N)
-B_idx[0,0,0:M,0:M] = torch.zeros([M, M])
-B_idx[0,0,N-1,:] = torch.zeros(N)
-B_idx[0,0,:,0] = torch.zeros(N)
-B_idx[0,0,:,N-1] = torch.zeros(N)
-
-# Define boundary values
-B = torch.abs(B_idx-1)*4.0
+B, B_idx = geometries.l_shaped_geometry(N)
 
 # Set forcing term
 f = torch.ones(1,1,N,N)*1.0
