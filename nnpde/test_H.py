@@ -52,10 +52,6 @@ losses = []
 
 # <codecell>
 
-reload(H)
-
-# <codecell>
-
 # Define train dimension
 N = 16
 
@@ -139,6 +135,7 @@ print("final loss is {0}".format(losses[-1]))
 # <codecell>
 
 N = 50
+nb_iters = 2000
 
 B, B_idx = geometries.square_geometry(N)
 
@@ -147,11 +144,47 @@ f = torch.ones(1,1,N,N)*1.0
 
 # Obtain solutions
 gtt = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = 10000)
-output = im.H_method(net, B_idx, B, f, torch.ones(1,1,N,N), k = 1000)
+output = im.H_method(net, B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
+jacoby_pure = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
 
 # <codecell>
 
-print(F.mse_loss(gtt, output))
+loss_to_be_achieved = 1e-3
+
+u_0 = torch.ones(1, 1, N, N)
+
+# <codecell>
+
+%%timeit
+# old method 
+u_k_old = im.jacobi_method(B_idx, B, f, u_0, k = 1)
+loss_of_old = F.mse_loss(gtt, u_k_old)
+k_count_old = 1
+while loss_of_old >= loss_to_be_achieved:
+    u_k_old = im.jacobi_method(B_idx, B, f, u_k_old, k = 1)
+    loss_of_old = F.mse_loss(gtt, u_k_old)
+    k_count_old += 1
+
+# <codecell>
+
+%%timeit
+# new method
+u_k_new = im.H_method(net, B_idx, B, f, u_0, k=1)
+
+loss_new = F.mse_loss(gtt, u_k_new)
+k_count_new = 1
+while loss_new >= loss_to_be_achieved:
+    u_k_new = im.H_method(net, B_idx, B, f, u_k_new, k=1)
+    loss_new = F.mse_loss(gtt, u_k_new)
+    k_count_new += 1
+
+# <codecell>
+
+print("needed {0} iterations (compared to {1}), ratio: {2}".format(k_count_old, k_count_new, k_count_old/k_count_new))
+
+# <codecell>
+
+print("the loss of the new method is {0}, compared to the pure-jacoby one: {1}. computed with {2} iterations".format(F.mse_loss(gtt, output), F.mse_loss(gtt, jacoby_pure), nb_iters))
 
 Z_gtt = gtt.view(N,N).numpy() 
 Z_output = output.detach().view(N, N).numpy()
@@ -170,6 +203,18 @@ fig.colorbar(im_gtt)
 fig.tight_layout()
 
 plt.show()
+
+# <codecell>
+
+np.mean(Z_gtt - Z_output)
+
+# <codecell>
+
+
+
+# <codecell>
+
+np.mean(Z_gtt - Z_jacoby)
 
 # <markdowncell>
 
