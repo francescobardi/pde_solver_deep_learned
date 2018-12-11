@@ -85,19 +85,21 @@ class JacobyWithConv:
                 ex = 0
 
             # Define the loss, CHECK if it is correct wrt paper
-            loss = loss + F.mse_loss(ground_truth, u) + ex
+            loss = loss + F.mse_loss(ground_truth, u) #+ ex
 
-            # Backpropagation
-            loss.backward(retain_graph =  False)
+        # Backpropagation
+        loss.backward(retain_graph =  False)
 
-            # SGD step
-            self.optim.step()
+        # SGD step
+        self.optim.step()
 
 
     def fit(self, problem_instances):
         self.problem_instances = problem_instances
         losses = []
-        prev_total_loss = 0
+        prev_total_loss = metrics.compute_loss(self.net,
+                                              self.problem_instances,
+                                              self.N).item()
 
         # TODO express this as a while-loop with max_iter and tolerance in the "check"
         for _ in range(self.max_iters):
@@ -108,7 +110,7 @@ class JacobyWithConv:
                                               self.N)
 
             # Exit optimization
-            if total_loss.item() <= self.tol or total_loss.item() - prev_total_loss < self.tol:
+            if total_loss.item() <= self.tol or np.abs(total_loss.item() - prev_total_loss) < self.tol:
                 break
 
 
