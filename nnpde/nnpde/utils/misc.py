@@ -21,3 +21,9 @@ def apply_n_times(f, n):
     def f_folded_n_times(x):
         return reduce(lambda fx, _: f(fx), range(n), x)
     return f_folded_n_times
+
+
+def chunks(l, n):
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
