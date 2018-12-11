@@ -65,7 +65,6 @@ class JacobyWithConv:
             idx = problem_idx[i]
             problem_instance = self.problem_instances[idx]
 
-            # TODO this will not work, problem_instance
             B_idx = problem_instance.B_idx
             B = problem_instance.B
             f = problem_instance.forcing_term

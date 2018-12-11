@@ -57,8 +57,16 @@ losses = model.losses
 
 # <codecell>
 
-for name, param in train_net.net.named_parameters():
-    print(name, param)
+# TODO conv_u and Hu should be more or less the same, right? but they are clearly not...
+some_u = problem_instances[0].initial_u
+
+conv_u = model.net(some_u)
+
+H = helpers.conv_net_to_matrix(model.net, model.N)
+
+Hu = np.dot(H, some_u.view(-1).detach().numpy())
+
+all((conv_u.view(-1).detach().numpy() - Hu) < 1e-4)
 
 # <codecell>
 

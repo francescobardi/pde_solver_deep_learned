@@ -24,6 +24,7 @@ def conv_net_to_matrix(net, N):
 
     # TODO I still think that this is horrible code.
     # This is not readable, and makes a shit ton of assumptions about the net.
+    # TODO combine first the layers, then convert them.
     for param in net.parameters():
         ks = param.view(9)
         ks = list(map(lambda el: el.item(),ks))
