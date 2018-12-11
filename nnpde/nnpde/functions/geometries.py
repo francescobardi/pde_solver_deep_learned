@@ -18,7 +18,7 @@ def square_geometry(size, boundary_value=None):
     B_idx[0,0,:,size -1] = torch.zeros(size)
 
     # Define boundary values
-    B = torch.abs(B_idx-1)*(boundary_value or (np.random.rand() + 1)  *3)
+    B = torch.abs(B_idx-1)*(boundary_value or (np.random.normal(0,1)))
 
     return B_idx, B
 
@@ -45,6 +45,6 @@ def l_shaped_geometry(size, l_cutout_size=None, boundary_value=None):
     B_idx[0,0,:,size-1] = torch.zeros(size)
 
     # Define boundary values
-    B = torch.abs(B_idx-1)*(boundary_value or (np.random.rand() + 1)  *3)
+    B = torch.abs(B_idx-1)*(boundary_value or (np.random.normal(0,1)))
 
     return B_idx, B
