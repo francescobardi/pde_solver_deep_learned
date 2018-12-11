@@ -33,7 +33,7 @@ def l_shaped_geometry(size, l_cutout_size=None, boundary_value=None):
     Returns:
         (geometry, boundary_index)
     """
-    # size = 50 (Should we initialize size to 50?)
+
     l_cutout_size = l_cutout_size or int(np.floor(size/2))
 
     # Define geometry 1.0 inner points 0.0 elsewhre
