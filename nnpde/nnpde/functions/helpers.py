@@ -31,8 +31,8 @@ def conv_net_to_matrix(net, N):
 
         H = np.diag(np.ones(N**2)) * ks[4] + np.diag(np.ones(N**2-1),1)* ks[5] \
         + np.diag(np.ones(N**2 - N),N) * ks[7] + np.diag(np.ones(N**2 - N - 1),N+1) * ks[8] \
-        + np.diag(np.ones(N**2 - 1), - 1) * ks[3] + np.diag(np.ones(N**2 - N-1),N+1) * ks[6] \
-        + np.diag(np.ones(N**2 - N), -N) * ks[1] +  np.diag(np.ones(N**2 - N-1),-N-1) * ks[2] \
+        + np.diag(np.ones(N**2 - 1), - 1) * ks[3] + np.diag(np.ones(N**2 - N+1),N-1) * ks[6] \
+        + np.diag(np.ones(N**2 - N), -N) * ks[1] +  np.diag(np.ones(N**2 - N+1),-N+1) * ks[2] \
         + np.diag(np.ones(N**2 - N - 1),-N-1) * ks[0]
 
         Hs.append(H)
@@ -50,21 +50,12 @@ def spectral_radius(T,H):
 
 
 def get_T(N):
-    A = np.eye(N**2)
 
-    for i in range(N, N**2-N):
-        if (i%N != 0 and i%N != N-1):
-            # Left and right neigh
-            A[i][i-1] = -0.25
-            A[i][i+1] = -0.25
-            # Up and low neigh
-            A[i][i-N] = -0.25
-            A[i][i+N] = -0.25
-    I = torch.zeros(1,1,N**2,N**2)
-    I[0,0,:,:] = torch.eye(N**2,N**2)
-    At = torch.zeros(1,1,N**2,N**2)
-    At[0,0,:, :] = torch.from_numpy(A)
-    T = I - At
+    b = np.ones(N**2-1)*0.25
+    c = np.ones(N**2-N)*0.25
+
+    T = np.diag(b, 1) + np.diag(b, -1) + np.diag(c, N) + np.diag(c, -N)
+    
     return T
 
 def plot_solution(gtt,output,N):
