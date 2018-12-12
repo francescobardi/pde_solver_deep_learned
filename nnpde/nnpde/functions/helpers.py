@@ -42,6 +42,8 @@ def conv_net_to_matrix(net, N):
 
 
 def spectral_radius(T,H):
+    ## WHY YOU WORK WITH TORCH TENSOR IF THEN USE NP.LINALG
+    ## TODO USE ONLY NUMPY FOR SPECTRAL RADIUS
     T1 = T[0,0,:,:].double()
     H1 = torch.from_numpy(H).double()
     tmp = T1 + T1 @ H1 - H1
@@ -50,11 +52,18 @@ def spectral_radius(T,H):
 
 
 def get_T(N):
-
+    ## WHY YOU WORK WITH TORCH TENSOR IF THEN USE NP.LINALG
+    ## TODO USE ONLY NUMPY FOR SPECTRAL RADIUS
+    
     b = np.ones(N**2-1)*0.25
     c = np.ones(N**2-N)*0.25
 
-    T = np.diag(b, 1) + np.diag(b, -1) + np.diag(c, N) + np.diag(c, -N)
+    Tnp = np.diag(b, 1) + np.diag(b, -1) + np.diag(c, N) + np.diag(c, -N)
+    
+    T = torch.zeros(1,1,N**2,N**2)
+    
+    T[0,0,:,:] = torch.from_numpy(Tnp)
+    
     
     return T
 

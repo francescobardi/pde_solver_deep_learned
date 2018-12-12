@@ -77,15 +77,17 @@ class JacobyWithConv:
 
             # Compute the spectral norm and set the loss to infinity if spectral norm > 1
             # TODO We do this prior to applying the gradient... this doesn't
-            # seem right to me
+            # seem right to me. exaclty  IT DOES DON WORK AS YOU CANNOT DIFFERENTIATE a nan
+            """
             H = helpers.conv_net_to_matrix(self.net, self.N)
             if helpers.spectral_radius(self.T, H) > 1:
                 ex = np.nan_to_num(np.inf)
             else:
                 ex = 0
-
+            """
+            
             # Define the loss, CHECK if it is correct wrt paper
-            loss = loss + F.mse_loss(ground_truth, u) #+ ex
+            loss = loss + F.mse_loss(ground_truth, u) #+ ex #TODO remove comment after properly enforcing constraint 
 
         # Backpropagation
         loss.backward(retain_graph =  False)
