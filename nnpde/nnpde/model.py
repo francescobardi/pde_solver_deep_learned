@@ -17,16 +17,13 @@ class JacobyWithConv:
                  batch_size=1,
                  learning_rate=1e-6,
                  max_iters=1000,
+                 nb_layers=3,
                  tol=1e-6,
                  k_range=[1, 20],
                  N=16):
 
         if net is None:
-            self.net = nn.Sequential(
-                nn.Conv2d(1, 1, 3, padding=1, bias=False),
-                nn.Conv2d(1, 1, 3, padding=1, bias=False),
-                nn.Conv2d(1, 1, 3, padding=1, bias=False),
-            )
+            self.net = nn.Sequential(*[nn.Conv2d(1, 1, 3, padding=1, bias=False) for _ in range(nb_layers)])
         else:
             self.net = net
 
@@ -61,7 +58,6 @@ class JacobyWithConv:
         # TODO for i in batch_size??? this doesn't make sense at all...
         # for batch in batches and each batch has size batch_size
         for i in range(self.batch_size):
-            logging.debug(f"training with batch {i}")
             idx = problem_idx[i]
             problem_instance = self.problem_instances[idx]
 
@@ -85,9 +81,9 @@ class JacobyWithConv:
             else:
                 ex = 0
             """
-            
+
             # Define the loss, CHECK if it is correct wrt paper
-            loss = loss + F.mse_loss(ground_truth, u) #+ ex #TODO remove comment after properly enforcing constraint 
+            loss = loss + F.mse_loss(ground_truth, u) #+ ex #TODO remove comment after properly enforcing constraint
 
         # Backpropagation
         loss.backward(retain_graph =  False)
@@ -104,7 +100,7 @@ class JacobyWithConv:
                                               self.N).item()
 
         # TODO express this as a while-loop with max_iter and tolerance in the "check"
-        for _ in range(self.max_iters):
+        for cur_iter in range(self.max_iters):
             self._optimization_step_()
 
             total_loss = metrics.compute_loss(self.net,
@@ -119,6 +115,8 @@ class JacobyWithConv:
             # Store lossses for visualization
             losses.append(total_loss.item())
             prev_total_loss = total_loss.item()
+            if cur_iter % 100 == 0:
+                logging.info(f"iter {cur_iter} with total loss {prev_total_loss}")
 
         self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
