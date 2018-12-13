@@ -40,7 +40,7 @@ N = 16
 f = torch.zeros(1, 1, N, N)
 
 # For each problem instance define number of iteration to perform to obtain the solution
-nb_problem_instances = 50
+nb_problem_instances = 200
 problem_instances = [DirichletProblem(k=k) for k in np.random.randint(1, 20, nb_problem_instances)]
 
 # <markdowncell>
@@ -52,8 +52,12 @@ problem_instances = [DirichletProblem(k=k) for k in np.random.randint(1, 20, nb_
 import nnpde.model as M 
 
 # TODO fit would idealy take X, y, (u_0 and u_*)
-model = M.JacobyWithConv(max_iters=10).fit(problem_instances)
+model = M.JacobyWithConv(max_iters=1000, batch_size=10).fit(problem_instances)
 losses = model.losses
+
+# <codecell>
+
+print(losses)
 
 # <codecell>
 
@@ -67,6 +71,14 @@ H = helpers.conv_net_to_matrix(model.net, model.N)
 Hu = np.dot(H, some_u.view(-1).detach().numpy())
 
 all((conv_u.view(-1).detach().numpy() - Hu) < 1e-4)
+
+# <markdowncell>
+
+# CHECK VALUES, now the error is very small , only problems may be at boundary nodes
+
+# <codecell>
+
+print(conv_u.view(-1).detach().numpy() - Hu)
 
 # <codecell>
 
@@ -92,9 +104,13 @@ print("final loss is {0}".format(losses[-1]))
 
 # <codecell>
 
+from nnpde import metrics 
 # Solve the same problem, at each iteration the only thing changing are the weights, which are optimized
 # TODO why though? wouldn't it make much more sense to train it more times on different problems? isn't this the same as oversampling each training sample?
-
+model = M.JacobyWithConv(max_iters=1000, batch_size=10)
+net = model.net
+optim = model.optim
+losses = []
 for _ in range(100):
     net.zero_grad()
     loss = torch.zeros(1)
@@ -109,7 +125,7 @@ for _ in range(100):
     for i in range(batch_size):
 
         idx = problem_idx[i]
-        problem_instance = problem_instances_list[idx]
+        problem_instance = problem_instances[idx]
         
         B_idx = problem_instance.B_idx
         B = problem_instance.B
@@ -121,17 +137,17 @@ for _ in range(100):
         # Compute the solution with the updated weights      
         u_list[i] = im.H_method(net, B_idx, B, f, initial_u, k)
         
-        H = helpers.build_diagH_from_net(net,N)
-        T = helpers.get_T(N)
-        
-        spectral_norm = helpers.calculate_spectral_radius(T,H)
-        ex = 0
-                
-        if spectral_norm > 1:
-            ex = np.nan_to_num(np.inf)
+        #H = helpers.build_diagH_from_net(net,N)
+        #T = helpers.get_T(N)
+        #
+        #spectral_norm = helpers.calculate_spectral_radius(T,H)
+        #ex = 0
+        #        
+        #if spectral_norm > 1:
+        #    ex = np.nan_to_num(np.inf)
 
         # Define the loss, CHECK if it is correct wrt paper
-        loss = loss + F.mse_loss(ground_truth, u_list[i])+ex
+        loss = loss + F.mse_loss(ground_truth, u_list[i])#+ex
     
 
 
@@ -141,7 +157,7 @@ for _ in range(100):
     # SGD step
     optim.step()
     
-    total_loss = helpers.compute_loss(net, problem_instances_list,N)
+    total_loss = metrics.compute_loss(net, problem_instances,N)
     
     # Exit optimization 
     tol = 1e-2
@@ -194,7 +210,7 @@ f = torch.ones(1,1,N,N)*1.0
 
 # Obtain solutions
 gtt = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = 10000)
-output = im.H_method(net, B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
+output = im.H_method(model.net, B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
 jacoby_pure = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
 
 # <codecell>
@@ -202,6 +218,7 @@ jacoby_pure = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = nb_iters)
 loss_to_be_achieved = 1e-3
 
 u_0 = torch.ones(1, 1, N, N)
+net = model.net
 
 # <codecell>
 
