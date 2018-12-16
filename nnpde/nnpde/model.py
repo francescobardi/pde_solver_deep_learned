@@ -9,9 +9,17 @@ from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 
+__author__ = "Francesco Bardi, ADDyourName"
+__credits__ = ["Francesco Bardi",
+               "ADDyourName"]
+__license__ = "GPL"
+__maintainer__ = "Francesco Bardi"
+__status__ = "Development"
+
+
 class JacobyWithConv:
     """A class to obtain the optimal weights"""
-    # TODO test with larger batch_size than 1...
+
     def __init__(self,
                  net=None,
                  batch_size=1,
@@ -23,18 +31,17 @@ class JacobyWithConv:
                  N=16):
 
         if net is None:
-            self.net = nn.Sequential(*[nn.Conv2d(1, 1, 3, padding=1, bias=False) for _ in range(nb_layers)])
+            self.net = nn.Sequential(
+                *[nn.Conv2d(1, 1, 3, padding=1, bias=False) for _ in range(nb_layers)])
         else:
             self.net = net
 
-
         # Set the optimizer, you have to play with lr: if too big nan
+        self.learning_rate = learning_rate
         self.optim = torch.optim.SGD(self.net.parameters(), lr=learning_rate)
         ##optim = torch.optim.Adadelta(net.parameters())
         #optim = torch.optim.Adam(net.parameters(), lr=1e-6)
         #optim = torch.optim.ASGD(net.parameters())
-        # SGD seems much faster
-        self.learning_rate = learning_rate
 
         self.batch_size = batch_size
         self.max_iters = max_iters
@@ -45,80 +52,63 @@ class JacobyWithConv:
         self.H = None
         self.N = N
 
-
     def _optimization_step_(self):
         self.net.zero_grad()
-        loss = torch.zeros(1)
 
-        # Sample problem_instances
-        # TODO this can select the same problems multiple times! this should
-        # not be the case. Split the problems into chunks. see utils.misc.chunks
-        problem_idx = np.random.choice(np.arange(len(self.problem_instances)), self.batch_size, replace = 0)
+        # Randomly sample a subset of problem_instances
+        problem_idx = np.random.choice(
+            np.arange(len(self.problem_instances)), self.batch_size, replace=0)
+        problem_instances_batch = [
+            self.problem_instances[i] for i in problem_idx]
 
-        # TODO for i in batch_size??? this doesn't make sense at all...
-        # for batch in batches and each batch has size batch_size
-        for i in range(self.batch_size):
-            idx = problem_idx[i]
-            problem_instance = self.problem_instances[idx]
+        # Compute loss using only batch
+        loss = metrics.compute_loss(self.net, problem_instances_batch)
 
-            B_idx = problem_instance.B_idx
-            B = problem_instance.B
-            f = problem_instance.forcing_term
-            initial_u = problem_instance.initial_u
-            k = problem_instance.k
-            ground_truth = problem_instance.ground_truth
+        # Backpropagate loss function
+        loss.backward(retain_graph=True)
 
-            # Compute the solution with the updated weights
-            u = im.H_method(self.net, B_idx, B, f, initial_u, k)
-
-            # Compute the spectral norm and set the loss to infinity if spectral norm > 1
-            # TODO We do this prior to applying the gradient... this doesn't
-            # seem right to me. exaclty  IT DOES DON WORK AS YOU CANNOT DIFFERENTIATE a nan
-            """
-            H = helpers.conv_net_to_matrix(self.net, self.N)
-            if helpers.spectral_radius(self.T, H) > 1:
-                ex = np.nan_to_num(np.inf)
-            else:
-                ex = 0
-            """
-
-            # Define the loss, CHECK if it is correct wrt paper
-            loss = loss + F.mse_loss(ground_truth, u) #+ ex #TODO remove comment after properly enforcing constraint
-
-        # Backpropagation
-        loss.backward(retain_graph =  False)
-
-        # SGD step
+        # Update weights
         self.optim.step()
 
-
     def fit(self, problem_instances):
+        """  
+             Returns
+             -------
+             self : object
+                 Returns an instance of self.
+        """
+        # Initialization
         self.problem_instances = problem_instances
         losses = []
         prev_total_loss = metrics.compute_loss(self.net,
-                                              self.problem_instances,
-                                              self.N).item()
+                                               self.problem_instances).item()
 
-        # TODO express this as a while-loop with max_iter and tolerance in the "check"
-        for cur_iter in range(self.max_iters):
+        # Optimization loop
+        for n_iter in range(self.max_iters):
+
+            # Update weights
             self._optimization_step_()
 
+            # Compute total loss
             total_loss = metrics.compute_loss(self.net,
-                                              self.problem_instances,
-                                              self.N)
+                                              self.problem_instances)
 
-            # Exit optimization
+            # Check convergence
             if total_loss.item() <= self.tol or np.abs(total_loss.item() - prev_total_loss) < self.tol:
-                break
-
+                losses.append(total_loss.item())
+                self.losses = losses
+                return self
 
             # Store lossses for visualization
             losses.append(total_loss.item())
             prev_total_loss = total_loss.item()
-            if cur_iter % 100 == 0:
-                logging.info(f"iter {cur_iter} with total loss {prev_total_loss}")
 
-        self.H = helpers.conv_net_to_matrix(self.net, self.N)
+            # Display information every 100 iterations
+            if n_iter % 100 == 0:
+                logging.info(
+                    f"iter {n_iter} with total loss {prev_total_loss}")
+
+        #self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
 
         return self
