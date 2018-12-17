@@ -1,14 +1,9 @@
+import numpy as np
 import torch
 
 from nnpde.functions import geometries
 import nnpde.functions.iterative_methods as im
 
-__author__ = "Francesco Bardi, ADDyourName"
-__credits__ = ["Francesco Bardi",
-               "ADDyourName"]
-__license__ = "GPL"
-__maintainer__ = "Francesco Bardi"
-__status__ = "Development"
 
 
 class DirichletProblem:
@@ -73,7 +68,9 @@ class DirichletProblem:
 
         # Initialize parameters to compute ground truth solution
         if initial_ground_truth is None:
-            self.initial_ground_truth = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), requires_grad=False)
+            self.initial_ground_truth = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), 
+                                                     dtype=torch.float32,
+                                                     requires_grad=False)
         else:
             self.initial_ground_truth = initial_ground_truth
 
@@ -85,7 +82,9 @@ class DirichletProblem:
 
         # Initialize parameters to obtain u
         if initial_u is None:
-            self.initial_u = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), requires_grad=True)
+            self.initial_u = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), 
+                                          dtype=torch.float32,
+                                          requires_grad=True)
         else:
             self.initial_u = initial_u
 
