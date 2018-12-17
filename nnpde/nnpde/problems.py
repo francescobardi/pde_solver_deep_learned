@@ -73,7 +73,7 @@ class DirichletProblem:
 
         # Initialize parameters to compute ground truth solution
         if initial_ground_truth is None:
-            self.initial_ground_truth = torch.rand(1, 1, N, N)
+            self.initial_ground_truth = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), requires_grad=False)
         else:
             self.initial_ground_truth = initial_ground_truth
 
@@ -85,7 +85,7 @@ class DirichletProblem:
 
         # Initialize parameters to obtain u
         if initial_u is None:
-            self.initial_u = torch.rand(1, 1, N, N, requires_grad=True)
+            self.initial_u = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), requires_grad=True)
         else:
             self.initial_u = initial_u
 
