@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 
+
 def check_dimensions(A, f):
     """Check the dimensions of inputs"""
 
@@ -22,56 +23,65 @@ def check_dimensions(A, f):
 def conv_net_to_matrix(net, N):
     Hs = []
 
-    # TODO I still think that this is horrible code.
-    # This is not readable, and makes a shit ton of assumptions about the net.
-    # TODO combine first the layers, then convert them.
     for param in net.parameters():
         ks = param.view(9)
-        ks = list(map(lambda el: el.item(),ks))
+        ks = list(map(lambda el: el.item(), ks))
 
-        H = np.diag(np.ones(N**2)) * ks[4] + np.diag(np.ones(N**2-1),1)* ks[5] \
-        + np.diag(np.ones(N**2 - N),N) * ks[7] + np.diag(np.ones(N**2 - N - 1),N+1) * ks[8] \
-        + np.diag(np.ones(N**2 - 1), - 1) * ks[3] + np.diag(np.ones(N**2 - N+1),N-1) * ks[6] \
-        + np.diag(np.ones(N**2 - N), -N) * ks[1] +  np.diag(np.ones(N**2 - N+1),-N+1) * ks[2] \
-        + np.diag(np.ones(N**2 - N - 1),-N-1) * ks[0]
+        H = np.diag(np.ones(N**2)) * ks[4] + np.diag(np.ones(N**2-1), 1) * ks[5] \
+            + np.diag(np.ones(N**2 - N), N) * ks[7] + np.diag(np.ones(N**2 - N - 1), N+1) * ks[8] \
+            + np.diag(np.ones(N**2 - 1), -1) * ks[3] + np.diag(np.ones(N**2 - N+1), N-1) * ks[6] \
+            + np.diag(np.ones(N**2 - N), -N) * ks[1] + np.diag(np.ones(N**2 - N+1), -N+1) * ks[2] \
+            + np.diag(np.ones(N**2 - N - 1), -N-1) * ks[0]
 
         Hs.append(H)
 
     return reduce(lambda acc, el: np.dot(acc, el), Hs)
 
 
+def build_T(N):
+    """ Build Jacobi method updated matrices for Poisson problem """
 
-def spectral_radius(T,H):
-    ## WHY YOU WORK WITH TORCH TENSOR IF THEN USE NP.LINALG
-    ## TODO USE ONLY NUMPY FOR SPECTRAL RADIUS
-    T1 = T[0,0,:,:].double()
-    H1 = torch.from_numpy(H).double()
-    tmp = T1 + T1 @ H1 - H1
-    eigvals = np.linalg.eigvals(tmp)
-    return np.abs(np.max(np.real(eigvals)))
+    # Build diagonals
+    a = np.ones(N**2-1)*0.25
+    b = np.ones(N**2-N)*0.25
 
+    # Build T
+    T = np.diag(a, 1) + np.diag(a, -1) + np.diag(b, N) + np.diag(b, -N)
 
-def get_T(N):
-    ## WHY YOU WORK WITH TORCH TENSOR IF THEN USE NP.LINALG
-    ## TODO USE ONLY NUMPY FOR SPECTRAL RADIUS
-    
-    b = np.ones(N**2-1)*0.25
-    c = np.ones(N**2-N)*0.25
-
-    Tnp = np.diag(b, 1) + np.diag(b, -1) + np.diag(c, N) + np.diag(c, -N)
-    
-    T = torch.zeros(1,1,N**2,N**2)
-    
-    T[0,0,:,:] = torch.from_numpy(Tnp)
-    
-    
     return T
 
-def plot_solution(gtt,output,N):
-    Z_gtt = gtt.view(N,N).numpy()
+
+def build_G(B_idx):
+    """ Build reset boundary matrix """
+
+    N = B_idx.size()[2]
+    M = B_idx.size()[3]
+
+    B_idx = B_idx.view(N, M).numpy()
+
+    a = np.zeros(N**2)
+    for i in range(N):
+        for j in range(N):
+            a[i*N + j] = B_idx[i, j]
+
+    G = np.diag(a)
+    return G
+
+
+def spectral_radius(X):
+    """ Compute the spectral_radius of a matrix """
+
+    # Compute eigenvalues
+    eigvals = np.linalg.eigvals(X)
+
+    return np.max(np.absolute(eigvals))
+
+
+def plot_solution(gtt, output, N):
+    Z_gtt = gtt.view(N, N).numpy()
     Z_output = output.detach().view(N, N).numpy()
 
-    fig, axes = plt.subplots(nrows = 1, ncols = 2)
+    fig, axes = plt.subplots(nrows=1, ncols=2)
 
     fig.suptitle("Comparison")
 
@@ -85,5 +95,3 @@ def plot_solution(gtt,output,N):
     fig.tight_layout()
 
     plt.show()
-
-
