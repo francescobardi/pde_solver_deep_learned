@@ -1,5 +1,6 @@
 import logging
 import copy
+from functools import reduce
 
 import torch
 from torch import nn
@@ -10,8 +11,16 @@ from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 
-from importlib import reload
-reload(metrics)
+
+class _ConvNet_(nn.Module):
+    def __init__(self, nb_layers):
+        super(_ConvNet_, self).__init__()
+
+        self.convLayers = nn.ModuleList([nn.Conv2d(1, 1, 3, padding=1, bias=False)
+                                         for _ in range(nb_layers)])
+
+    def forward(self, x, boundary):
+        return reduce(lambda acc, el: el(acc) * boundary, self.convLayers, x)
 
 
 class JacobyWithConv:
@@ -29,8 +38,7 @@ class JacobyWithConv:
                  optimizer='Adadelta'):
 
         if net is None:
-            self.net = nn.Sequential(
-                *[nn.Conv2d(1, 1, 3, padding=1, bias=False) for _ in range(nb_layers)])
+            self.net = _ConvNet_(nb_layers=nb_layers)
         else:
             self.net = net
 
