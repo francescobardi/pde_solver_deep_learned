@@ -31,7 +31,7 @@ class JacobyWithConv:
                  net=None,
                  batch_size=1,
                  learning_rate=1e-6,
-                 max_iters=1000,
+                 max_epochs=1000,
                  nb_layers=3,
                  tol=1e-4,
                  stable_count=5,
@@ -53,7 +53,7 @@ class JacobyWithConv:
                 self.net.parameters(), lr=learning_rate)
 
         self.batch_size = batch_size
-        self.max_iters = max_iters
+        self.max_epochs = max_epochs
         self.tol = tol
         self.stable_count = stable_count
 
@@ -92,7 +92,7 @@ class JacobyWithConv:
         count = 0
 
         # Optimization loop
-        for n_epoch in range(self.max_iters):
+        for n_epoch in range(self.max_epochs):
 
             # Update weights
             self._optimization_step_()
