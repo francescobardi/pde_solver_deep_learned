@@ -237,7 +237,7 @@ def H_method(net, boundary_index, boundary_values, forcing_term, initial_u = Non
 
     def step(u_n):
         jac_it = _jacobi_iteration_step_(u_n, boundary_index, boundary_values, forcing_term)
-        u_n = jac_it + net(jac_it - u_n) * boundary_index
+        u_n = jac_it + net(jac_it - u_n, boundary_index)
         return _reset_boundary_(u_n, boundary_index, boundary_values)
 
     return apply_n_times(step, k)(u)

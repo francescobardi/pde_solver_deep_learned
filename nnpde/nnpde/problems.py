@@ -83,7 +83,7 @@ class DirichletProblem:
 
         self.k = k
 
-    @parameter
+    @property
     def ground_truth(self):
         if self._ground_truth is None:
             # Compute ground truth solution using Jacobi method

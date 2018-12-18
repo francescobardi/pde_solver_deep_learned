@@ -3,6 +3,10 @@ import torch.nn.functional as F
 import nnpde.functions.iterative_methods as im
 
 
+def least_squares_loss(a, b):
+    return F.mse_loss(a, b, reduction='sum')
+
+
 def compute_loss(net, problem_instances):
     """ Function to compute the total loss given a set of problem instances"""
 
@@ -16,6 +20,6 @@ def compute_loss(net, problem_instances):
 
         # setting `reduction <- 'sum'` will result in square L2-Norm,
         # aka Least Square Loss
-        loss += F.mse_loss(ground_truth, u, reduction='sum')
+        loss += least_squares_loss(ground_truth, u)
 
     return loss
