@@ -26,10 +26,10 @@ def square_geometry(size):
     # Define boundary values
     B = torch.zeros_like(B_idx)
 
-    B[0,0,0 ,:] = np.random.normal(0, 1)
-    B[0,0,:,-1] = np.random.normal(0, 1)
-    B[0,0,-1,:] = np.random.normal(0, 1)
-    B[0,0,1:, 0] = np.random.normal(0, 1) # we don't want to overwrite the first value
+    B[0,0,0 ,:] =  np.random.uniform(-1, 1)
+    B[0,0,:,-1] =  np.random.uniform(-1, 1)
+    B[0,0,-1,:] =  np.random.uniform(-1, 1)
+    B[0,0,1:, 0] = np.random.uniform(-1, 1) # we don't want to overwrite the first value
     return B_idx, B
 
 
@@ -49,7 +49,7 @@ def l_shaped_geometry(size, l_cutout_size=None):
 
     _, cutout = square_geometry(l_cutout_size)
     B[0, 0, :l_cutout_size, :l_cutout_size] = cutout
-    B[0, 0, :l_cutout_size-1, :l_cutout_size-1] = np.random.normal(0,1)
+    B[0, 0, :l_cutout_size-1, :l_cutout_size-1] = np.random.uniform(0,1)
 
     B_idx[0, 0, :l_cutout_size, :l_cutout_size] = torch.zeros(1)
 
