@@ -41,7 +41,8 @@ class JacobyWithConv:
                  check_spectral_radius=False):
 
         if net is None:
-            self.net = _ConvNet_(nb_layers=nb_layers)
+            self.nb_layers = nb_layers
+            self.net = _ConvNet_(nb_layers=self.nb_layers)
         else:
             self.net = net
 
@@ -107,6 +108,8 @@ class JacobyWithConv:
                 if count > self.stable_count:
                     losses.append(total_loss)
                     self.losses = losses
+                    logging.info(
+                        f"Convergence reached in {n_epoch} epochs with total loss {total_loss}")
                     return self
             else:
                 # Reset counter
