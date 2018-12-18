@@ -50,15 +50,17 @@ class DirichletProblem:
                  k_ground_truth=1000,
                  initial_ground_truth=None,
                  initial_u=None,
-                 domain_type="Square",
+                 domain_type="square",
                  N=16):
 
         # Initialize Geometry and Boundary Conditions
         if B_idx is None:
-            self.B_idx, self.B = geometries.square_geometry(N)
-        else:
-            self.B_idx = B_idx
-            self.B = B
+            if domain_type.lower() == "square":
+                self.B_idx, self.B = geometries.square_geometry(N)
+            elif domain_type.lower() == "l_shape":
+                self.B_idx, self.B = geometries.l_shaped_geometry(N)
+            else:
+                raise ValueError('no such domain_type known, try either `square` or `l_shape`')
 
         # Initialize f
         if f is None:
