@@ -15,6 +15,8 @@ def compute_loss(net, problem_instances):
         # Compute solution
         u = problem_instance.compute_solution(net)
 
-        loss = loss + F.mse_loss(ground_truth, u)
+        # setting `reduction <- None` will result in square L2-Norm,
+        # aka Least Square Loss
+        loss = loss + F.mse_loss(ground_truth, u, reduction=None)
 
     return loss
