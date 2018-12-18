@@ -9,12 +9,8 @@ from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 
-__author__ = "Francesco Bardi, ADDyourName"
-__credits__ = ["Francesco Bardi",
-               "ADDyourName"]
-__license__ = "GPL"
-__maintainer__ = "Francesco Bardi"
-__status__ = "Development"
+from importlib import reload
+reload(metrics)
 
 
 class JacobyWithConv:
@@ -48,7 +44,7 @@ class JacobyWithConv:
         self.tol = tol
         self.k_range = k_range
 
-        self.T = helpers.get_T(N)
+        self.T = helpers.build_T(N)
         self.H = None
         self.N = N
 
@@ -71,17 +67,16 @@ class JacobyWithConv:
         self.optim.step()
 
     def fit(self, problem_instances):
-        """  
+        """
              Returns
              -------
              self : object
-                 Returns an instance of self.
+                 Returns the instance (self).
         """
         # Initialization
         self.problem_instances = problem_instances
         losses = []
-        prev_total_loss = metrics.compute_loss(self.net,
-                                               self.problem_instances).item()
+        prev_total_loss = metrics.compute_loss(self.net, self.problem_instances).item()
 
         # Optimization loop
         for n_iter in range(self.max_iters):
@@ -90,11 +85,11 @@ class JacobyWithConv:
             self._optimization_step_()
 
             # Compute total loss
-            total_loss = metrics.compute_loss(self.net,
-                                              self.problem_instances)
+            total_loss = metrics.compute_loss(self.net, self.problem_instances).item()
 
             # Check convergence
-            if total_loss.item() <= self.tol or np.abs(total_loss.item() - prev_total_loss) < self.tol:
+            if total_loss.item() <= self.tol or \
+               np.abs(total_loss.item() - prev_total_loss) < self.tol:
                 losses.append(total_loss.item())
                 self.losses = losses
                 return self
@@ -105,8 +100,7 @@ class JacobyWithConv:
 
             # Display information every 100 iterations
             if n_iter % 100 == 0:
-                logging.info(
-                    f"iter {n_iter} with total loss {prev_total_loss}")
+                logging.info(f"iter {n_iter} with total loss {prev_total_loss}")
 
         #self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
