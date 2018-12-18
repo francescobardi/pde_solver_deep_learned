@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
+from nnpde.utils.misc import chunks
 
 
 class _ConvNet_(nn.Module):
@@ -61,22 +62,21 @@ class JacobyWithConv:
         self.N = N
 
     def _optimization_step_(self):
-        self.net.zero_grad()
 
-        # Randomly sample a subset of problem_instances
-        problem_idx = np.random.choice(
-            np.arange(len(self.problem_instances)), self.batch_size, replace=0)
-        problem_instances_batch = [
-            self.problem_instances[i] for i in problem_idx]
+        shuffled_problem_instances = np.random.permutation(
+            self.problem_instances)
 
-        # Compute loss using only batch
-        loss = metrics.compute_loss(self.net, problem_instances_batch)
+        for problem_chunk in chunks(shuffled_problem_instances, self.batch_size):
+            self.net.zero_grad()
 
-        # Backpropagate loss function
-        loss.backward(retain_graph=True)
+            # Compute loss using only batch
+            loss = metrics.compute_loss(self.net, problem_chunk)
 
-        # Update weights
-        self.optim.step()
+            # Backpropagate loss function
+            loss.backward(retain_graph=True)
+
+            # Update weights
+            self.optim.step()
 
     def fit(self, problem_instances):
         """
@@ -92,7 +92,7 @@ class JacobyWithConv:
         count = 0
 
         # Optimization loop
-        for n_iter in range(self.max_iters):
+        for n_epoch in range(self.max_iters):
 
             # Update weights
             self._optimization_step_()
@@ -117,9 +117,9 @@ class JacobyWithConv:
             prev_total_loss = total_loss
 
             # Display information every 100 iterations
-            if n_iter % 100 == 0:
+            if n_epoch % 100 == 0:
                 logging.info(
-                    f"iter {n_iter} with total loss {prev_total_loss}")
+                    f"iter {n_epoch} with total loss {prev_total_loss}")
 
         #self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
