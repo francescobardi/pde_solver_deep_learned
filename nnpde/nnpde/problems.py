@@ -2,8 +2,8 @@ import numpy as np
 import torch
 
 from nnpde.functions import geometries
+from nnpde.utils import misc
 import nnpde.functions.iterative_methods as im
-
 
 
 class DirichletProblem:
@@ -68,27 +68,29 @@ class DirichletProblem:
 
         # Initialize parameters to compute ground truth solution
         if initial_ground_truth is None:
-            self.initial_ground_truth = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), 
-                                                     dtype=torch.float32,
-                                                     requires_grad=False)
+            self.initial_ground_truth = misc.normal_distributed_tensor(N, requires_grad=False)
         else:
             self.initial_ground_truth = initial_ground_truth
 
         self.k_ground_truth = k_ground_truth
-
-        # Compute ground truth solution using Jacobi method
-        self.ground_truth = im.jacobi_method(
-            self.B_idx, self.B, self.f, self.initial_ground_truth, self.k_ground_truth)
+        self._ground_truth = None
 
         # Initialize parameters to obtain u
         if initial_u is None:
-            self.initial_u = torch.tensor(np.random.normal(size=(N, N)).reshape((1, 1, N, N)), 
-                                          dtype=torch.float32,
-                                          requires_grad=True)
+            self.initial_u = misc.normal_distributed_tensor(N, requires_grad=True)
         else:
             self.initial_u = initial_u
 
         self.k = k
+
+    @parameter
+    def ground_truth(self):
+        if self._ground_truth is None:
+            # Compute ground truth solution using Jacobi method
+            self._ground_truth = im.jacobi_method(
+                self.B_idx, self.B, self.f, self.initial_ground_truth, self.k_ground_truth)
+
+        return self._ground_truth
 
     def compute_solution(self, net):
         """Compute solution using optim method
