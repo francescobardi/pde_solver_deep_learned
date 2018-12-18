@@ -1,4 +1,5 @@
 import logging
+import copy
 
 import torch
 from torch import nn
@@ -9,12 +10,8 @@ from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 
-__author__ = "Francesco Bardi, ADDyourName"
-__credits__ = ["Francesco Bardi",
-               "ADDyourName"]
-__license__ = "GPL"
-__maintainer__ = "Francesco Bardi"
-__status__ = "Development"
+from importlib import reload
+reload(metrics)
 
 
 class JacobyWithConv:
@@ -28,7 +25,8 @@ class JacobyWithConv:
                  nb_layers=3,
                  tol=1e-6,
                  k_range=[1, 20],
-                 N=16):
+                 N=16,
+                 optimizer='Adadelta'):
 
         if net is None:
             self.net = nn.Sequential(
@@ -38,8 +36,10 @@ class JacobyWithConv:
 
         # Set the optimizer, you have to play with lr: if too big nan
         self.learning_rate = learning_rate
-        self.optim = torch.optim.SGD(self.net.parameters(), lr=learning_rate)
-        ##optim = torch.optim.Adadelta(net.parameters())
+        if optimizer == 'Adadelta':
+            self.optim = torch.optim.Adadelta(self.net.parameters())
+        else:
+            self.optim = torch.optim.SGD(self.net.parameters(), lr=learning_rate)
         #optim = torch.optim.Adam(net.parameters(), lr=1e-6)
         #optim = torch.optim.ASGD(net.parameters())
 
@@ -48,7 +48,7 @@ class JacobyWithConv:
         self.tol = tol
         self.k_range = k_range
 
-        self.T = helpers.get_T(N)
+        self.T = helpers.build_T(N)
         self.H = None
         self.N = N
 
@@ -71,17 +71,16 @@ class JacobyWithConv:
         self.optim.step()
 
     def fit(self, problem_instances):
-        """  
+        """
              Returns
              -------
              self : object
-                 Returns an instance of self.
+                 Returns the instance (self).
         """
         # Initialization
         self.problem_instances = problem_instances
         losses = []
-        prev_total_loss = metrics.compute_loss(self.net,
-                                               self.problem_instances).item()
+        prev_total_loss = np.inf
 
         # Optimization loop
         for n_iter in range(self.max_iters):
@@ -90,23 +89,22 @@ class JacobyWithConv:
             self._optimization_step_()
 
             # Compute total loss
-            total_loss = metrics.compute_loss(self.net,
-                                              self.problem_instances)
+            total_loss = metrics.compute_loss(self.net, self.problem_instances).item()
 
             # Check convergence
-            if total_loss.item() <= self.tol or np.abs(total_loss.item() - prev_total_loss) < self.tol:
-                losses.append(total_loss.item())
+            if total_loss <= self.tol or \
+               np.abs(total_loss - prev_total_loss) < self.tol:
+                losses.append(total_loss)
                 self.losses = losses
                 return self
 
             # Store lossses for visualization
-            losses.append(total_loss.item())
-            prev_total_loss = total_loss.item()
+            losses.append(total_loss)
+            prev_total_loss = total_loss
 
             # Display information every 100 iterations
             if n_iter % 100 == 0:
-                logging.info(
-                    f"iter {n_iter} with total loss {prev_total_loss}")
+                logging.info(f"iter {n_iter} with total loss {prev_total_loss}")
 
         #self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
