@@ -12,6 +12,10 @@ import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 from nnpde.utils.misc import chunks
 
+seed = 9  # Does not give problems
+torch.manual_seed(seed)
+np.random.seed(seed)
+
 
 class _ConvNet_(nn.Module):
     def __init__(self, nb_layers):
@@ -19,6 +23,20 @@ class _ConvNet_(nn.Module):
 
         self.convLayers = nn.ModuleList([nn.Conv2d(1, 1, 3, padding=1, bias=False)
                                          for _ in range(nb_layers)])
+        """
+        ## START SHIT ##
+        # For the moment leave this shit here it may be useful
+        initial_weights = torch.rand(1,1,3,3)
+        #initial_weights[0,0,0,1] = 0.25
+        #initial_weights[0,0,2,1] = 0.25
+        #initial_weights[0,0,1,0] = 0.25
+        #initial_weights[0,0,1,2] = 0.25
+        
+        for name, param in self.convLayers.named_parameters():
+            param = nn.Parameter(initial_weights)
+            print(name, param)
+        ## END SHIT ##
+        """
 
     def forward(self, x, boundary):
         return reduce(lambda acc, el: el(acc) * boundary, self.convLayers, x)
@@ -37,7 +55,7 @@ class JacobyWithConv:
                  stable_count=5,
                  k_range=[1, 20],
                  N=16,
-                 optimizer='Adadelta',
+                 optimizer='SGD',
                  check_spectral_radius=False):
 
         if net is None:
@@ -89,8 +107,11 @@ class JacobyWithConv:
         # Initialization
         self.problem_instances = problem_instances
         losses = []
-        prev_total_loss = np.inf
+        prev_total_loss = metrics.compute_loss(
+            self.net, self.problem_instances).item()
         count = 0
+        logging.info(
+            f"Training max_epochs is {self.max_epochs}, tol={self.tol}. Initial loss is {prev_total_loss}")
 
         # Optimization loop
         for n_epoch in range(self.max_epochs):
