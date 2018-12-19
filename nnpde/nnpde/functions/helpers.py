@@ -95,3 +95,121 @@ def plot_solution(gtt, output, N):
     fig.tight_layout()
 
     plt.show()
+
+def count_conv(in_shape,kernel_size,layers = 3):
+    
+    '''
+    Parameters
+    -----------
+    in_shape:
+        input_shape shape of the input matrix an integer since we have a square matrix
+        kernel size shape of convolution kernel
+        number of layer number of convolution layers
+    
+    Returns
+    ----------
+    number of flops (int)
+    '''
+    
+    
+    nb_additions = layers * (kernel_size**2 * in_shape**2 + 2 * in_shape**2) # kernel_size additions after each convolution + 2*in_shape for the forcing term for each layer
+    
+    nb_mult = layers * (kernel_size**2 * in_shape) # Kernel size multiplications for each convolution for each layer
+    
+    return layers * (nb_additions + nb_mult)
+
+def count_jac(in_shape):
+    '''
+    Parameters
+    -----------
+    in_shape:
+        input_shape (int) : shape of input
+    Returns
+    ----------
+    number of flops
+    '''
+    return 4 * in_shape**2 + 2 * in_shape**2 + in_shape**2 # 4 additions for each matrix element + 1 multiplication and 1 addition for resetting boundary and 1 n^2 term for forcing term
+
+
+
+def compare_flops(n,n_iter_conv,n_iter_jac):
+    """
+    Parameters:
+    -----------
+    
+        n (int): Shape of the square matrix n x n.
+        n_iter_conv (int): Number of iterations it took for our model to converge
+        n_iter_jac (int): Number of iterations it took for the jacobi method to converge to the ground truth solution
+
+    Returns:
+    ----------
+       ratio of the number of flops for the convolution and jacobi method
+
+    """
+    
+    flop_conv = (count_conv(n,3)) * n_iter_conv 
+
+    flop_jac = count_jac(n) * n_iter_jac 
+
+    return flop_conv/flop_jac
+
+
+def test_model(net, n_tests, grid_size):
+    
+     """
+    Parameters:
+    -----------
+        net : Convolutional Network
+        n_tests (int): number of tests
+        grid_size (int): size of the domain
+    Returns:
+    ----------
+       number of iterations it takes for the jacobi iterative method to converge, number of iterations it takes
+       for our model to converge and the ratio of the number of flops used in both methods.
+
+    """
+        
+    
+    losses = []
+    
+    loss_to_be_achieved = 1e-6
+    max_nb_iters = 100000
+    f = torch.zeros(1, 1, grid_size, grid_size)
+    u_0 = torch.ones(1, 1, grid_size, grid_size)
+
+    for i in range(n_tests):
+        
+        problem_instance = DirichletProblem(N=grid_size, k=max_nb_iters * 1000 )
+        gtt = problem_instance.ground_truth
+        
+        # jacoby method / known solver
+        
+        u_jac = im.jacobi_method(problem_instance.B_idx, problem_instance.B, f, u_0, k = 1)
+        loss_jac = F.mse_loss(gtt, u_jac) # TODO use loss from metrics
+        count_jac = 1
+        
+        nb_iters = 0
+        while loss_jac >= loss_to_be_achieved and nb_iters < max_nb_iters:
+            u_jac = im.jacobi_method(problem_instance.B_idx, problem_instance.B, f, u_jac,k = 1)
+            loss_jac = F.mse_loss(gtt, u_jac)
+            count_jac += 1
+            nb_iters += 1
+            
+        # learned solver
+        
+        u_h = im.H_method(net,problem_instance.B_idx, problem_instance.B, f, u_0 ,k = 1)
+        loss_h = F.mse_loss(gtt, u_h)
+        count_h = 1
+        
+        # old method 
+        nb_iters = 0
+        while loss_h >= loss_to_be_achieved and nb_iters < max_nb_iters:
+            u_h = im.H_method(net,problem_instance.B_idx, problem_instance.B, f, u_h,k = 1)
+            loss_h = F.mse_loss(gtt, u_h)
+            count_h += 1
+            nb_iters += 1
+        
+        
+        yield count_jac, count_h, compare_flops(grid_size,count_h,count_jac)
+
+
