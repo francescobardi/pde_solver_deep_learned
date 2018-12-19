@@ -12,10 +12,6 @@ import nnpde.functions.iterative_methods as im
 from nnpde import metrics
 from nnpde.utils.misc import chunks
 
-seed = 9  # Does not give problems
-torch.manual_seed(seed)
-np.random.seed(seed)
-
 
 class _ConvNet_(nn.Module):
     def __init__(self, nb_layers):
@@ -56,8 +52,13 @@ class JacobyWithConv:
                  k_range=[1, 20],
                  N=16,
                  optimizer='SGD',
-                 check_spectral_radius=False):
+                 check_spectral_radius=False,
+                 seed=None):
 
+        if seed is not None:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
+            
         if net is None:
             self.nb_layers = nb_layers
             self.net = _ConvNet_(nb_layers=self.nb_layers)
