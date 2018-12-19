@@ -24,8 +24,6 @@ class _ConvNet_(nn.Module):
         self.convLayers = nn.ModuleList([nn.Conv2d(1, 1, 3, padding=1, bias=False)
                                          for _ in range(nb_layers)])
         """
-        ## START SHIT ##
-        # For the moment leave this shit here it may be useful
         initial_weights = torch.rand(1,1,3,3)
         #initial_weights[0,0,0,1] = 0.25
         #initial_weights[0,0,2,1] = 0.25
@@ -35,7 +33,6 @@ class _ConvNet_(nn.Module):
         for name, param in self.convLayers.named_parameters():
             param = nn.Parameter(initial_weights)
             print(name, param)
-        ## END SHIT ##
         """
 
     def forward(self, x, boundary):
