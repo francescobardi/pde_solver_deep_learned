@@ -4,15 +4,16 @@ import logging
 import torch
 import torch.nn.functional as F
 import pandas as pd
-import numpy as np 
+import numpy as np
 
+from nnpde.metrics import least_squares_loss as LSE
 from nnpde.helpers import compare_flops
 from nnpde.problems import DirichletProblem
 import nnpde.iterative_methods as im
 from nnpde import metrics
 
 
-def _test_model_(net, n_tests, grid_size, tol=1e-4, max_nb_iters=100000, convergence_tol=1e-10, max_converged_count=100):
+def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, convergence_tol=1e-10, max_converged_count=100):
     """
     Parameters:
     -----------
@@ -27,27 +28,33 @@ def _test_model_(net, n_tests, grid_size, tol=1e-4, max_nb_iters=100000, converg
            number of iterations it takes for the trained model to converge,
            the ratio of the number of flops used in both methods.
     """
+    net = model.net
+    nb_layers = model.nb_layers
 
     f = torch.zeros(1, 1, grid_size, grid_size)
-    u_0 = torch.ones(1, 1, grid_size, grid_size)
+    initial_u = torch.ones(1, 1, grid_size, grid_size)
 
     for i in range(n_tests):
         # TODO This is stupid, it should not be here...
-        problem_instance = DirichletProblem(N=grid_size, k=max_nb_iters * 1000)
-        gtt = problem_instance.ground_truth
+        problem_instance = DirichletProblem(
+            N=grid_size, k_ground_truth=max_nb_iters)
+        ground_truth = problem_instance.ground_truth
 
         # jacoby method / known solver
 
         logging.debug(f'test nb {i} jac')
         start_time = time.process_time()
-        u_jac = im.jacobi_method(problem_instance.B_idx, problem_instance.B, f, u_0, k = 1)
-        loss_jac = F.mse_loss(gtt, u_jac)  # TODO use loss from metrics
+        u_jac = im.jacobi_method(
+            problem_instance.B_idx, problem_instance.B, f, initial_u, k=1)
+        # TODO use loss from metrics
+        loss_jac = LSE(ground_truth, u_jac)
         count_jac = 1
         converged_count = 0
 
         while loss_jac >= tol and count_jac < max_nb_iters:
-            u_jac = im.jacobi_method(problem_instance.B_idx, problem_instance.B, f, u_jac,k = 1)
-            _loss_jac = F.mse_loss(gtt, u_jac)
+            u_jac = im.jacobi_method(
+                problem_instance.B_idx, problem_instance.B, f, u_jac, k=1)
+            _loss_jac = LSE(ground_truth, u_jac)
             if np.abs(loss_jac.item() - _loss_jac.item()) < convergence_tol:
                 converged_count += 1
             else:
@@ -55,7 +62,8 @@ def _test_model_(net, n_tests, grid_size, tol=1e-4, max_nb_iters=100000, converg
 
             loss_jac = _loss_jac
             if converged_count > max_converged_count:
-                logging.info('jac converged but did not reach required tol')
+                logging.info(
+                    'Jacobi method  converged but did not reach required tol')
                 break
             count_jac += 1
 
@@ -63,36 +71,39 @@ def _test_model_(net, n_tests, grid_size, tol=1e-4, max_nb_iters=100000, converg
 
         # learned solver
 
-        logging.debug(f'test nb {i} convjac')
+        logging.debug(f'Test nb {i} H method')
         start_time = time.process_time()
         # TODO turn off grad for net
-        u_h = im.H_method(net, problem_instance.B_idx, problem_instance.B, f, u_0 ,k = 1)
-        loss_h = F.mse_loss(gtt, u_h)
-        count_h = 1
+        u_H = im.H_method(net, problem_instance.B_idx,
+                          problem_instance.B, f, initial_u, k=1)
+        loss_H = LSE(ground_truth, u_H)
+        count_H = 1
         converged_count = 0
-        while loss_h >= tol and count_h < max_nb_iters:
-            count_h += 1
-            u_h = im.H_method(net, problem_instance.B_idx, problem_instance.B, f, u_h,k = 1)
-            _loss_h = F.mse_loss(gtt, u_h)
-            if np.abs(loss_h.item() - _loss_h.item()) < convergence_tol:
+        while loss_H >= tol and count_H < max_nb_iters:
+            count_H += 1
+            u_H = im.H_method(net, problem_instance.B_idx,
+                              problem_instance.B, f, u_H, k=1)
+            _loss_H = LSE(ground_truth, u_H)
+            if np.abs(loss_H.item() - _loss_H.item()) < convergence_tol:
                 converged_count += 1
             else:
                 converged_count = 1
 
-            loss_h = _loss_h
+            loss_H = _loss_H
             if converged_count > max_converged_count:
-                logging.warning('convjac converged but did not reach required tol')
+                logging.warning(
+                    'H method converged but did not reach required tol')
                 break
 
-            if count_h % 100 == 0:
-                logging.debug(f'test nb {i}, count_h {count_h}, loss {loss_h}')
+            if count_H % 100 == 0:
+                logging.debug(f'Test nb {i}, count_H {count_H}, loss {loss_H}')
 
         con_time = time.process_time() - start_time
-        logging.debug(f'test nb {i} done')
+        logging.debug(f'Test nb {i} done')
 
         # TODO this is stupid
-        yield (count_jac, count_h, compare_flops(grid_size, count_h, count_jac), jac_time, con_time,
-               jac_time / con_time, loss_jac.item(), loss_h.item())
+        yield (count_jac, count_H, compare_flops(grid_size, count_jac, count_H, nb_layers), jac_time, con_time,
+               con_time / jac_time, loss_jac.item(), loss_H.item())
 
 
 def test_results_pd(*args, **kwargs):

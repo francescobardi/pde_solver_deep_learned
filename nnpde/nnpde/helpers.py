@@ -36,7 +36,7 @@ def conv_net_to_matrix(net, N):
 
 
 def build_T(N):
-    """ Build Jacobi method updated matrices for Poisson problem """
+    """ Build Jacobi method updated matrix for Poisson problem """
 
     # Build diagonals
     a = np.ones(N**2-1)*0.25
@@ -66,7 +66,7 @@ def build_G(B_idx):
 
 
 def spectral_radius(X):
-    """ Compute the spectral_radius of a matrix """
+    """ Compute the spectral radius of a matrix """
 
     # Compute eigenvalues
     eigvals = np.linalg.eigvals(X)
@@ -74,30 +74,26 @@ def spectral_radius(X):
     return np.max(np.absolute(eigvals))
 
 
-def count_conv(in_shape,kernel_size,layers = 3):
+def count_conv(grid_size, kernel_size, nb_layers=3):
     """
     Parameters
     -----------
-    in_shape:
+    grid_size:
         input_shape shape of the input matrix an integer since we have a square matrix
         kernel size shape of convolution kernel
-        number of layer number of convolution layers
+        number of layer number of convolution nb_layers
 
     Returns
     ----------
     number of flops (int)
     """
 
+    nb_add_mult = nb_layers * (kernel_size**2 * grid_size**2)
 
-    # kernel_size additions after each convolution + 2*in_shape for the forcing term for each layer
-    nb_additions = layers * (kernel_size**2 * in_shape**2 + 2 * in_shape**2)
-
-    nb_mult = layers * (kernel_size**2 * in_shape) # Kernel size multiplications for each convolution for each layer
-
-    return layers * (nb_additions + nb_mult)
+    return nb_add_mult
 
 
-def count_jac(in_shape:int) -> float:
+def count_jac(grid_size: int) -> float:
     """
     Parameters
     -----------
@@ -106,16 +102,16 @@ def count_jac(in_shape:int) -> float:
     ----------
         number of flops (float)
     """
-    # 4 additions for each matrix element + 1 multiplication and 1 addition for resetting boundary and 1 n^2 term for forcing term
-    return 4 * in_shape**2 + 2 * in_shape**2 + in_shape**2
+
+    return 4 * grid_size**2
 
 
-def compare_flops(dim, n_iter_conv, n_iter_jac):
+def compare_flops(grid_size, n_iter_jac, n_iter_conv, nb_layers):
     """
     Parameters:
     -----------
 
-        dim (int): Dimension of the square matrix dim x dim.
+        grid_size (int): Dimension of the square matrix dim x dim.
         n_iter_conv (int): Number of iterations it took for the trained model to converge
         n_iter_jac (int): Number of iterations it took for the jacobi method to converge to the ground truth solution
 
@@ -125,8 +121,8 @@ def compare_flops(dim, n_iter_conv, n_iter_jac):
 
     """
 
-    flop_conv = (count_conv(dim,3)) * n_iter_conv
+    flop_conv = count_conv(grid_size, nb_layers) * n_iter_conv
 
-    flop_jac = count_jac(dim) * n_iter_jac
+    flop_jac = count_jac(grid_size) * n_iter_jac
 
     return flop_conv/flop_jac
