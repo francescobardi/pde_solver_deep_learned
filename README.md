@@ -1,4 +1,9 @@
-# mL18
+# EPFL CS-433 Machine Learning: Project 2
+## ICLR 2018 Reproducibility Challenge: Learning Neural PDE Solvers with Convergence Guarantees 
+
+This is the repository for the second project in the CS-433 class at EPFL.
+
+We tried to reproduce the results of a paper handed for the ICLR conference: https://openreview.net/forum?id=rklaWn0qK7
 
 ## Setup
 
@@ -14,44 +19,36 @@ Followed by:
 source activate <your chosen name>
 ```
 
-## File Layout
-
+## Structure
 
 ```
-.
-.
-├── environment.yml
 ├── environment.yml                          # environment file
 ├── nnpde
 │   ├── main.ipynb                           # main notebook, entry point
-│   ├── main.py                              # copy of main notebook as a python module
-│   ├── nnpde
-│   │   ├── __init__.py
-│   │   ├── geometries.py
-│   │   ├── helpers.py
-│   │   ├── iterative_methods.py
-│   │   ├── metrics.py
-│   │   ├── model.py                         # model definition
-│   │   ├── model_testing.py
-│   │   ├── problems.py                      # problems
-│   │   └── utils                            # various helpers
-│   │       ├── __init__.py
-│   │       ├── jupyter.ipynb
-│   │       ├── jupyter.py
-│   │       ├── logs.py
-│   │       ├── misc.py
-│   │       └── plots.py
-│   ├── _graveyard_
-│   │   ├── pde_with_conv.ipynb
-│   │   ├── test_H.ipynb
-│   │   ├── test_H.py
-│   │   ├── test_jacobi.ipynb
-│   │   ├── test_jacobi.py
-│   │   ├── test-model.ipynb
-│   │   ├── _conv_to_mat_.py
-│   │   └── __init__.py
+│   └── nnpde
+│       ├── __init__.py
+│       ├── geometries.py                    # geometries: shapes and boundaries
+│       ├── helpers.py
+│       ├── iterative_methods.py             # definition of iterative solvers
+│       ├── metrics.py
+│       ├── model.py                         # model definition
+│       ├── model_testing.py
+│       ├── problems.py                      # problems
+│       └── utils                            # various helpers
+│           ├── __init__.py
+│           ├── jupyter.ipynb
+│           ├── jupyter.py
+│           ├── logs.py
+│           ├── misc.py
+│           └── plots.py
 ├── README.md                                # this file
+├── report                                   # latex script, plots, etc.
 └── references
-    ├── convergenceJacobi.pdf
     └── paper.pdf                            # paper on which this is based
 ```
+
+The notebook files were converted using this [script](https://gist.github.com/samuelsmal/144e1204d646cd65ff8864d4b483f948), but should be viewed as a notebook.
+
+## Authors (in alphabetical order)
+
+Francesco Bardi, Samuel Edler von Baussnern, Emiljano Gjiriti
