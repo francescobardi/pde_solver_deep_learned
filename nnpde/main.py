@@ -394,6 +394,7 @@ test_results =  list(MT.test_model(mdl.net, 1, 64))
 
 # <codecell>
 
+# takes 7m!
 test_results = MT.test_results_pd(mdl.net, 10, 64)
 
 # <codecell>
