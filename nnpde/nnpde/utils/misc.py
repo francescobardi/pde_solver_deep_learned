@@ -36,3 +36,8 @@ def normal_distributed_tensor(size, dtype=torch.float32, requires_grad=False):
     return torch.tensor(np.random.normal(size=(size, size)).reshape((1, 1, size, size)),
                         dtype=dtype,
                         requires_grad=requires_grad)
+
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
