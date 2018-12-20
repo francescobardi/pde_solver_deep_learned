@@ -16,3 +16,23 @@ def plot_loss(losses):
     plt.ylabel('Loss', fontsize=14)
     plt.title('Loss')
     plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
+
+
+def plot_solution(gtt, output, N):
+    Z_gtt = gtt.view(N, N).numpy()
+    Z_output = output.detach().view(N, N).numpy()
+
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+
+    fig.suptitle("Comparison")
+
+    im_gtt = axes[0].imshow(Z_gtt)
+    axes[0].set_title("Ground truth solution")
+
+    im_output = axes[1].imshow(Z_output)
+    axes[1].set_title("H method solution")
+
+    fig.colorbar(im_gtt)
+    fig.tight_layout()
+
+    plt.show()

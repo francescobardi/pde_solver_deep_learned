@@ -195,7 +195,7 @@ def jacobi_method(boundary_index, boundary_values, forcing_term, initial_u = Non
     N = boundary_index.size()[3]
 
     if initial_u is None:
-        u = torch.zeros(1 ,1 , N, N)
+        u = torch.zeros(1, 1, N, N)
     else:
         u = initial_u
 
@@ -207,9 +207,9 @@ def jacobi_method(boundary_index, boundary_values, forcing_term, initial_u = Non
     return apply_n_times(step, k)(u)
 
 
-def H_method(net, boundary_index, boundary_values, forcing_term, initial_u = None, k = 1000):
+# TODO rename this
+def H_method(net, boundary_index, boundary_values, forcing_term, initial_u=None, k=1000):
     """ Compute solution by H method
-
 
     Parameters
     ----------

@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from nnpde.functions import helpers
 import nnpde.functions.iterative_methods as im
 from nnpde import metrics
-from nnpde.utils.misc import chunks
+from nnpde.utils.misc import chunks, set_seed
 
 
 class _ConvNet_(nn.Module):
@@ -25,7 +25,7 @@ class _ConvNet_(nn.Module):
         #initial_weights[0,0,2,1] = 0.25
         #initial_weights[0,0,1,0] = 0.25
         #initial_weights[0,0,1,2] = 0.25
-        
+
         for name, param in self.convLayers.named_parameters():
             param = nn.Parameter(initial_weights)
             print(name, param)
@@ -46,16 +46,14 @@ class JacobyWithConv:
                  nb_layers=3,
                  tol=1e-4,
                  stable_count=5,
-                 k_range=[1, 20],
                  N=16,
                  optimizer='SGD',
                  check_spectral_radius=False,
-                 seed=None):
+                 random_seed=None):
 
-        if seed is not None:
-            torch.manual_seed(seed)
-            np.random.seed(seed)
-            
+        if random_seed is not None:
+            set_seed(random_seed)
+
         if net is None:
             self.nb_layers = nb_layers
             self.net = _ConvNet_(nb_layers=self.nb_layers)
@@ -64,6 +62,7 @@ class JacobyWithConv:
 
         self.learning_rate = learning_rate
         if optimizer == 'Adadelta':
+            logging.info(f"Using optimizer {optimizer}")
             self.optim = torch.optim.Adadelta(self.net.parameters())
         else:
             self.optim = torch.optim.SGD(
@@ -78,10 +77,9 @@ class JacobyWithConv:
         self.H = None
         self.N = N
 
-    def _optimization_step_(self):
+    def _optimization_step_(self, problem_instances):
 
-        shuffled_problem_instances = np.random.permutation(
-            self.problem_instances)
+        shuffled_problem_instances = np.random.permutation(problem_instances)
 
         for problem_chunk in chunks(shuffled_problem_instances, self.batch_size):
             self.net.zero_grad()
@@ -103,40 +101,35 @@ class JacobyWithConv:
                  Returns the instance (self).
         """
         # Initialization
-        self.problem_instances = problem_instances
         losses = []
         prev_total_loss = metrics.compute_loss(
-            self.net, self.problem_instances).item()
-        count = 0
+            self.net, problem_instances).item()
+        convergence_counter = 0
         logging.info(
-            f"Training max_epochs is {self.max_epochs}, tol={self.tol}. Initial loss is {prev_total_loss}")
+            f"Training with max_epochs: {self.max_epochs}, tol: {self.tol}. Initial loss is {prev_total_loss}")
 
         # Optimization loop
         for n_epoch in range(self.max_epochs):
 
             # Update weights
-            self._optimization_step_()
+            self._optimization_step_(problem_instances)
 
             # Compute total loss
             total_loss = metrics.compute_loss(
-                self.net, self.problem_instances).item()
-
-            # Check convergence
-            if np.abs(total_loss - prev_total_loss) < self.tol:
-                count += 1
-                if count > self.stable_count:
-                    losses.append(total_loss)
-                    self.losses = losses
-                    logging.info(
-                        f"Convergence reached in {n_epoch} epochs with total loss {total_loss}")
-                    return self
-            else:
-                # Reset counter
-                count = 0
+                self.net, problem_instances).item()
 
             # Store lossses for visualization
             losses.append(total_loss)
             prev_total_loss = total_loss
+
+            # Check convergence
+            if np.abs(total_loss - prev_total_loss) < self.tol:
+                convergence_counter += 1
+                if convergence_counter > self.stable_count:
+                    break
+            else:
+                convergence_counter = 0
+
 
             # Display information every 100 iterations
             if n_epoch % 100 == 0:
@@ -145,5 +138,8 @@ class JacobyWithConv:
 
         #self.H = helpers.conv_net_to_matrix(self.net, self.N)
         self.losses = losses
+        logging.info(
+            f"Convergence reached in {n_epoch} epochs with total loss {total_loss}")
+        return self
 
         return self
