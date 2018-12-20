@@ -23,8 +23,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import nnpde.functions.iterative_methods as im
-from nnpde.functions import geometries, helpers
+import nnpde.iterative_methods as im
+from nnpde import geometries, helpers
 from nnpde.utils.logs import enable_logging, logging 
 from nnpde.problems import DirichletProblem 
 from nnpde.utils import plots
@@ -91,10 +91,6 @@ def grid_search_wrapper(base_parameters, grid_search_parameters):
 
 # <codecell>
 
-reload(M)
-
-# Took 3m 13s on a Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz
-
 # Net parameters
 base_parameters = {
     "nb_layers": 3,
@@ -108,8 +104,19 @@ base_parameters = {
 grid_parameters = {
     "learning_rate": np.logspace(start=-6, stop=-4, num=7), #num=7 is good since it contains 1e-5
 }
+
+# <codecell>
+
+reload(M)
+
+# Took 3m 13s on a Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz
+
 hyper_models = grid_search_wrapper(base_parameters, grid_parameters) \
     + grid_search_wrapper(base_parameters, {"optimizer": ["Adadelta"]})
+
+# <codecell>
+
+[m.losses for m in hyper_models]
 
 # <codecell>
 
@@ -197,6 +204,10 @@ plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 #hyper_fig.savefig('../report/fig/comparison_K.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
+
+# <codecell>
+
+M._ConvNet_(0)
 
 # <codecell>
 
@@ -382,21 +393,51 @@ helpers.spectral_radius(T+G.dot(H).dot(T)-G.dot(H))
 # <codecell>
 
 import nnpde.model_testing as MT
+import nnpde.problems as PDEF
 reload(MT)
+reload(PDEF)
 
 # <codecell>
 
-mdl = M.JacobyWithConv(**base_parameters).fit(problem_instances)
+mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 200, 'optimizer': 'Adadelta', 'nb_layers': 4}}).fit(problem_instances)
 
 # <codecell>
 
-test_results =  list(MT.test_model(mdl.net, 1, 64))
+tol = 1e-4
+tests_n10_g32 = MT.test_results_pd(mdl.net, 100, 32, tol=tol)
+tests_n10_g32.to_pickle('./data/grid_32.pkl')
 
 # <codecell>
 
 # takes 7m!
-test_results = MT.test_results_pd(mdl.net, 10, 64)
+test_results = MT.test_results_pd(mdl.net, 100, 64, tol=tol)
+test_results.to_pickle('./data/grid_64.pkl')
+test_results
 
 # <codecell>
 
-test_results
+test_results2 = MT.test_results_pd(mdl.net, 100, 256, tol=tol)
+test_results2.to_pickle('./data/grid_256.pkl')
+test_results2
+
+# <codecell>
+
+test_results3 = MT.test_results_pd(mdl.net, 100, 512, tol=tol)
+test_results3.to_pickle('./data/grid_512.pkl')
+test_results3
+
+# <codecell>
+
+test_results_big_dimension = MT.test_results_pd(mdl.net, 10, 256)
+4
+test_results_big_dimension
+
+# <codecell>
+
+test_results_ada = MT.test_results_pd(mdlAda.net, 1, 64)
+test_results_ada
+
+# <codecell>
+
+test_results_ada = MT.test_results_pd(mdlAda.net, 10, 64)
+test_results_ada_big_dimension = MT.test_results_pd(mdl.netAda, 10, 256)

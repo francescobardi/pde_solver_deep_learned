@@ -1,9 +1,9 @@
 import numpy as np
 import torch
 
-from nnpde.functions import geometries
+from nnpde import geometries
 from nnpde.utils import misc
-import nnpde.functions.iterative_methods as im
+import nnpde.iterative_methods as im
 
 
 class DirichletProblem:
@@ -85,14 +85,9 @@ class DirichletProblem:
 
         self.k = k
 
-    @property
-    def ground_truth(self):
-        if self._ground_truth is None:
-            # Compute ground truth solution using Jacobi method
-            self._ground_truth = im.jacobi_method(
-                self.B_idx, self.B, self.f, self.initial_ground_truth, self.k_ground_truth)
-
-        return self._ground_truth
+        # Compute ground truth solution using Jacobi method
+        self.ground_truth = im.jacobi_method(
+            self.B_idx, self.B, self.f, self.initial_ground_truth, self.k_ground_truth)
 
     def compute_solution(self, net):
         """Compute solution using optim method
