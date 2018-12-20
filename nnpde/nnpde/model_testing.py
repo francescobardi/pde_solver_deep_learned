@@ -13,7 +13,7 @@ import nnpde.iterative_methods as im
 from nnpde import metrics
 
 
-def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, convergence_tol=1e-10, max_converged_count=100):
+def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, convergence_tol=1e-10, max_converged_count=100, domain_type='square'):
     """
     Parameters:
     -----------
@@ -37,7 +37,7 @@ def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, conver
     for i in range(n_tests):
         # TODO This is stupid, it should not be here...
         problem_instance = DirichletProblem(
-            N=grid_size, k_ground_truth=max_nb_iters)
+            N=grid_size, k_ground_truth=max_nb_iters, domain_type=domain_type)
         ground_truth = problem_instance.ground_truth
 
         # jacoby method / known solver
@@ -46,7 +46,6 @@ def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, conver
         start_time = time.process_time()
         u_jac = im.jacobi_method(
             problem_instance.B_idx, problem_instance.B, f, initial_u, k=1)
-        # TODO use loss from metrics
         loss_jac = LSE(ground_truth, u_jac)
         count_jac = 1
         converged_count = 0

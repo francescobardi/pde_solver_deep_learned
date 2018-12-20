@@ -32,7 +32,7 @@ import nnpde.model as M
 
 # <codecell>
 
-enable_logging(10)
+enable_logging(20)
 
 seed = 9 # Does not give problems
 torch.manual_seed(seed)
@@ -96,8 +96,8 @@ base_parameters = {
     "nb_layers": 3,
     "max_epochs": 100,
     "batch_size": 10,
-    "stable_count": 10,
-    "random_seed": 9
+    "stable_count": 100,
+    "random_seed": 9,
 }
 
 # SGD
@@ -166,9 +166,10 @@ base_parameters
 
 reload(M)
 
-params = {**base_parameters, **{'max_epochs': 200, 'optimizer': 'Adadelta'}}
+params = {**base_parameters, **{'max_epochs': 500, 'optimizer': 'Adadelta'}}
 models = grid_search_wrapper(params, {'nb_layers': range(1, 6)})
 
+#models = [M.JacobyWithConv(**{**params, 'nb_layers': nb_layers}).fit(problem_instances) for nb_layers in [1,2,3,4,5]]
 #models = [M.JacobyWithConv(**{**params, 'nb_layers': nb_layers}).fit(problem_instances) for nb_layers in [1,2,3,4,5]]
 
 # <codecell>
@@ -292,7 +293,7 @@ for model in models:
             print(f"H method, K = {model.nb_layers}: convergence not reached after {max_iters}, final error is {err_H}.")
             break
     
-    print(f"H method, K = {model.nb_layers}: error of {err_to_be_achieved} achieved after {k_H} iterations.")
+    print(f"H method, K = {model.nb_layers}: error of {tol} achieved after {k_H} iterations.")
     errors_H.append(errs_H)
 
 # <codecell>
@@ -384,60 +385,171 @@ helpers.spectral_radius(T+G.dot(H).dot(T)-G.dot(H))
 
 # <markdowncell>
 
-# # model testing
+# # Model testing
 
 # <codecell>
 
 import nnpde.model_testing as MT
 import nnpde.problems as PDEF
-reload(MT)
-reload(PDEF)
 
 # <codecell>
 
-tol = 1e-4
+tol = 1e-6
 base_parameters
 
 # <codecell>
 
-mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 200, 'optimizer': 'Adadelta', 'nb_layers': 4}}).fit(problem_instances)
+mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': 4}}).fit(problem_instances)
 
 # <codecell>
 
-tests_n10_g32 = MT.test_results_pd(mdl.net, 100, 32, tol=tol)
-tests_n10_g32.to_pickle('./data/grid_32.pkl')
+from IPython.display import display
+import pandas as pd
+import seaborn as sns
+import os
+
+def obtain_test_results(mdl, grid_size, nb_tests=50, domain_shape='square', nb_layers=4, force=False, plot=False):
+    data_path = f'./data/nb_layers_{nb_layers}_grid_{grid_size}_domain_{domain_shape}.pkl'
+    
+    if force or not os.path.exists(data_path):
+        test_results = MT.test_results_pd(mdl, nb_tests, grid_size, tol=tol, convergence_tol=1e-12)
+        test_results.to_pickle(data_path)
+    else:
+        test_results = pd.read_pickle(data_path)
+
+
+    if plot:
+        test_results['iters_ratio'] = test_results['nb_iters_convjac'] / test_results['nb_iters_jac'] 
+        ax = sns.boxplot(data=test_results[['flops_ratio', 'cpu_time_ratio', 'iters_ratio']]\
+                         .rename(columns={'flops_ratio': 'Ratio of FLOPS', 'cpu_time_ratio': 'Ratio of CPU time', 'iters_ratio': 'Ratio of #iterations'}), orient="h", palette="Set2")
+        ax.set_title(f'Test results for grid size: {grid_size}')
+        plt.savefig(f'./data/grid_{grid_size}_domain_{domain_shape}.eps')
+        display(ax)
+    return test_results
 
 # <codecell>
 
-# takes 7m!
-test_results = MT.test_results_pd(mdl.net, 10, 64, tol=1e-4)
-test_results.to_pickle('./data/grid_64.pkl')
-test_results
+ts_32_s = obtain_test_results(mdl, 32)
+ts_32_l = obtain_test_results(mdl, 32, domain_shape='l_shape')
+ts_64_s = obtain_test_results(mdl, 64)
+ts_64_l = obtain_test_results(mdl, 32, domain_shape='l_shape')
+
+ts_32_s['grid'] = '32'
+ts_32_l['grid'] = '32'
+ts_64_l['grid'] = '64'
+ts_64_s['grid'] = '64'
+
+ts_32_s['shape'] = 'square'
+ts_32_l['shape'] = 'l-shape'
+ts_64_l['shape'] = 'l-shape'
+ts_64_s['shape'] = 'square'
 
 # <codecell>
 
-test_results2 = MT.test_results_pd(mdl.net, 100, 256, tol=tol)
-test_results2.to_pickle('./data/grid_256.pkl')
-test_results2
+mdl1 = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': 1}}).fit(problem_instances)
 
 # <codecell>
 
-test_results3 = MT.test_results_pd(mdl.net, 100, 512, tol=tol)
-test_results3.to_pickle('./data/grid_512.pkl')
-test_results3
+def agg_for_layer(nb_layers):
+    mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': nb_layers}}).fit(problem_instances)
+
+    ts_32_s = obtain_test_results(mdl, 32, nb_tests=20, nb_layers=nb_layers)
+    ts_32_l = obtain_test_results(mdl, 32, nb_tests=20, domain_shape='l_shape', nb_layers=nb_layers)
+    ts_64_s = obtain_test_results(mdl, 64, nb_tests=20, nb_layers=nb_layers)
+    ts_64_l = obtain_test_results(mdl, 32, nb_tests=20, domain_shape='l_shape', nb_layers=nb_layers)
+
+    ts_32_s['grid'] = '32'
+    ts_32_l['grid'] = '32'
+    ts_64_l['grid'] = '64'
+    ts_64_s['grid'] = '64'
+
+    ts_32_s['shape'] = 'square'
+    ts_32_l['shape'] = 'l-shape'
+    ts_64_l['shape'] = 'l-shape'
+    ts_64_s['shape'] = 'square'
+
+    d = {'flops_ratio': 'FLOPS ratio', 'cpu_time_ratio': 'CPU time ratio', 'nb_iters_jac': 'nb iters existent solver', 'nb_iters_convjac': 'nb iters trained solver'}
+    ts_concat = pd.concat([ts_32_l, ts_32_s, ts_64_l, ts_64_s]).rename(columns=d)
+    ta = ts_concat.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
+    ta['nb_layers'] = nb_layers
+    return ta
 
 # <codecell>
 
-test_results_big_dimension = MT.test_results_pd(mdl.net, 10, 256)
-4
-test_results_big_dimension
+l1 = agg_for_layer(1)
 
 # <codecell>
 
-test_results_ada = MT.test_results_pd(mdlAda.net, 1, 64)
-test_results_ada
+l2 = agg_for_layer(2)
 
 # <codecell>
 
-test_results_ada = MT.test_results_pd(mdlAda.net, 10, 64)
-test_results_ada_big_dimension = MT.test_results_pd(mdl.netAda, 10, 256)
+l3 = agg_for_layer(3)
+
+# <codecell>
+
+#f, axs = plt.subplots(nrows=1, ncols=2)
+#
+#for idx, col in enumerate(['CPU time ratio', 'FLOPS ratio']):
+#    sns.boxplot(data=a, y=col, x='grid', hue='shape', ax=axs[idx])
+#    axs[idx].get_legend().remove()
+#    
+#
+#    
+#axs[-1].legend(bbox_to_anchor=(1.05, 0), loc='lower left', borderaxespad=0.)
+#plt.tight_layout()
+#plt.savefig('./report/figs/test_results.eps')
+
+# <codecell>
+
+d = {'flops_ratio': 'FLOPS ratio', 'cpu_time_ratio': 'CPU time ratio', 'nb_iters_jac': 'nb iters existent solver', 'nb_iters_convjac': 'nb iters trained solver'}
+a = pd.concat([ts_32_l, ts_32_s, ts_64_l, ts_64_s])\
+.rename(columns=d)
+
+# <codecell>
+
+ta = a.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
+
+# <codecell>
+
+print(ta.to_latex(index=False))
+
+# <codecell>
+
+tal1 = ts_concat.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
+tal1['nb_layers'] = 1
+
+
+# <codecell>
+
+ta['nb_layers'] = 4
+ta
+
+# <codecell>
+
+list(final_results.columns)
+
+# <codecell>
+
+cols = [
+ 'nb_layers',
+ 'grid size',
+ 'shape',
+ 'FLOPS ratio',
+ 'CPU time ratio',
+ 'nb iters existent solver',
+ 'nb iters trained solver'
+]
+final_results = pd.concat([l1, l2, l3, ta])[cols]
+
+# <codecell>
+
+print(final_results.to_latex(index=False))
+
+# <codecell>
+
+
+
+# <codecell>
+
+
