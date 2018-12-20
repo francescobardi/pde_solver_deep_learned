@@ -15,13 +15,17 @@ fix_layout()
 
 # <codecell>
 
+import os
 from importlib import reload
 
 import numpy as np
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from IPython.display import display
 
 import nnpde.iterative_methods as im
 from nnpde import geometries, helpers
@@ -29,10 +33,12 @@ from nnpde.utils.logs import enable_logging, logging
 from nnpde.problems import DirichletProblem 
 from nnpde.utils import plots
 import nnpde.model as M 
+import nnpde.model_testing as MT
+import nnpde.problems as PDEF
 
 # <codecell>
 
-enable_logging(20)
+enable_logging(10)
 
 seed = 9 # Does not give problems
 torch.manual_seed(seed)
@@ -48,7 +54,7 @@ np.random.seed(seed)
 N = 16
 
 # For each problem instance define number of iteration to perform to obtain the solution
-nb_problem_instances = 30
+nb_problem_instances = 50
 problem_instances = [DirichletProblem(k=k) for k in np.random.randint(1, 20, nb_problem_instances)]
 
 # <markdowncell>
@@ -94,9 +100,9 @@ def grid_search_wrapper(base_parameters, grid_search_parameters):
 # Net parameters
 base_parameters = {
     "nb_layers": 3,
-    "max_epochs": 100,
+    "max_epochs": 200,
     "batch_size": 10,
-    "stable_count": 100,
+    "stable_count": 10,
     "random_seed": 9,
 }
 
@@ -134,7 +140,7 @@ for model in hyper_models[:-1]:
                  linestyle="-", 
                  marker=(i+2, 0, 0), 
                  markevery=10, 
-                 label = f'$\gamma= {learning_rates[i]:.2e} $')
+                 label = f'$\gamma= {model.learning_rate:.2e} $')
     i += 1
 
 # Plot Adadelta
@@ -147,10 +153,10 @@ plt.xlabel('n epochs', fontsize=14)
 plt.ylabel('Total loss [-]', fontsize=14)
 #plt.xlim([0, base_parameters['max_epochs']])
 #plt.ylim([0, 200])
-plt.title('Loss evolution for different learning rates, $K=3$, batchSize=10')
+plt.title('Loss evolution for different learning rates $\gamma$ \n $K=3$, $|\mathcal{D}|=50$, $|\mathcal{B}|=10$, max epochs=200')
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-#hyper_fig.savefig('../report/fig/hyper.eps', bbox_inches='tight')
+hyper_fig.savefig('../report/figs/hyper.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
@@ -166,7 +172,7 @@ base_parameters
 
 reload(M)
 
-params = {**base_parameters, **{'max_epochs': 500, 'optimizer': 'Adadelta'}}
+params = {**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta'}}
 models = grid_search_wrapper(params, {'nb_layers': range(1, 6)})
 
 #models = [M.JacobyWithConv(**{**params, 'nb_layers': nb_layers}).fit(problem_instances) for nb_layers in [1,2,3,4,5]]
@@ -193,23 +199,14 @@ for model in models[:]:
 plt.legend(bbox_to_anchor=(1.05, 0.31), loc=3, borderaxespad=0.)
 plt.xlabel('n epochs', fontsize=14)
 plt.ylabel('Total loss [-]', fontsize=14)
-#plt.xlim([0, max_epochs])
+plt.xlim([0, 300])
 #plt.ylim([0, 800])
-plt.title('Loss evolution for different learning rates, $K=3$, batchSize=10')
+plt.title('Loss evolution for different $K$ \n $|\mathcal{D}|=50$, $|\mathcal{B}|=10$, Adadelta, max epochs=1000')
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-#hyper_fig.savefig('../report/fig/comparison_K.eps', bbox_inches='tight')
+comparison_K_fig.savefig('../report/figs/comparison_K.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
-
-# <codecell>
-
-M._ConvNet_(0)
-
-# <codecell>
-
-models[1].max_epochs = 300
-models[1].fit(problem_instances)
 
 # <markdowncell>
 
@@ -251,6 +248,42 @@ for model in models:
 
 # <markdowncell>
 
+# # Plot square
+
+# <codecell>
+
+problem_square = DirichletProblem(N=N, k_ground_truth=20000)
+ground_truth_square = problem_square.ground_truth.view(N, N).numpy()
+
+square_fig = plt.figure()
+im = plt.imshow(ground_truth_square)
+plt.title("Square domain.")
+plt.colorbar(im)
+
+square_fig.savefig('../report/figs/square.eps', bbox_inches='tight')
+plt.draw()
+plt.show()
+
+# <markdowncell>
+
+# # Plot L shape
+
+# <codecell>
+
+problem_l_shape = DirichletProblem(N=N, k_ground_truth=20000, domain_type = "l_shape")
+ground_truth_l_shape = problem_l_shape.ground_truth.view(N, N).numpy()
+
+square_fig = plt.figure()
+im = plt.imshow(ground_truth_l_shape)
+plt.title("L-shape domain.")
+plt.colorbar(im)
+
+square_fig.savefig('../report/figs/l_shape.eps', bbox_inches='tight')
+plt.draw()
+plt.show()
+
+# <markdowncell>
+
 # # Error evolution with iterations
 
 # <codecell>
@@ -271,7 +304,7 @@ while err_jacobi >= tol:
     errs_jacobi.append(err_jacobi)
     k_jacobi += 1
     
-print(f"Jacobi method: error of {err_to_be_achieved} achieved after {k_jacobi} iterations.")
+print(f"Jacobi method: error of {tol} achieved after {k_jacobi} iterations.")
 
 # <codecell>
 
@@ -321,10 +354,10 @@ plt.xlabel('n iterations', fontsize=14)
 plt.ylabel('Error [-]', fontsize=14)
 #plt.xlim([0, max_epochs])
 plt.ylim([tol, errors_H[0][0]])
-plt.title('Error evolution for different $K$, $N={0}$'.format(N))
+plt.title('Error evolution for different $K$\n Grid size ${0}x{0}$'.format(N))
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-#error_k_fig.savefig('../report/fig/error_k.eps', bbox_inches='tight')
+error_k_fig.savefig('../report/figs/error_k.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
@@ -348,7 +381,7 @@ helpers.plot_solution(gtt,output,N)
 
 # <markdowncell>
 
-# Test on L-shape domain
+# ## Test on L-shape domain
 
 # <codecell>
 
@@ -389,24 +422,9 @@ helpers.spectral_radius(T+G.dot(H).dot(T)-G.dot(H))
 
 # <codecell>
 
-import nnpde.model_testing as MT
-import nnpde.problems as PDEF
-
-# <codecell>
-
 tol = 1e-6
 base_parameters
 
-# <codecell>
-
-mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': 4}}).fit(problem_instances)
-
-# <codecell>
-
-from IPython.display import display
-import pandas as pd
-import seaborn as sns
-import os
 
 def obtain_test_results(mdl, grid_size, nb_tests=50, domain_shape='square', nb_layers=4, force=False, plot=False):
     data_path = f'./data/nb_layers_{nb_layers}_grid_{grid_size}_domain_{domain_shape}.pkl'
@@ -426,29 +444,6 @@ def obtain_test_results(mdl, grid_size, nb_tests=50, domain_shape='square', nb_l
         plt.savefig(f'./data/grid_{grid_size}_domain_{domain_shape}.eps')
         display(ax)
     return test_results
-
-# <codecell>
-
-ts_32_s = obtain_test_results(mdl, 32)
-ts_32_l = obtain_test_results(mdl, 32, domain_shape='l_shape')
-ts_64_s = obtain_test_results(mdl, 64)
-ts_64_l = obtain_test_results(mdl, 32, domain_shape='l_shape')
-
-ts_32_s['grid'] = '32'
-ts_32_l['grid'] = '32'
-ts_64_l['grid'] = '64'
-ts_64_s['grid'] = '64'
-
-ts_32_s['shape'] = 'square'
-ts_32_l['shape'] = 'l-shape'
-ts_64_l['shape'] = 'l-shape'
-ts_64_s['shape'] = 'square'
-
-# <codecell>
-
-mdl1 = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': 1}}).fit(problem_instances)
-
-# <codecell>
 
 def agg_for_layer(nb_layers):
     mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': nb_layers}}).fit(problem_instances)
@@ -474,60 +469,6 @@ def agg_for_layer(nb_layers):
     ta['nb_layers'] = nb_layers
     return ta
 
-# <codecell>
-
-l1 = agg_for_layer(1)
-
-# <codecell>
-
-l2 = agg_for_layer(2)
-
-# <codecell>
-
-l3 = agg_for_layer(3)
-
-# <codecell>
-
-#f, axs = plt.subplots(nrows=1, ncols=2)
-#
-#for idx, col in enumerate(['CPU time ratio', 'FLOPS ratio']):
-#    sns.boxplot(data=a, y=col, x='grid', hue='shape', ax=axs[idx])
-#    axs[idx].get_legend().remove()
-#    
-#
-#    
-#axs[-1].legend(bbox_to_anchor=(1.05, 0), loc='lower left', borderaxespad=0.)
-#plt.tight_layout()
-#plt.savefig('./report/figs/test_results.eps')
-
-# <codecell>
-
-d = {'flops_ratio': 'FLOPS ratio', 'cpu_time_ratio': 'CPU time ratio', 'nb_iters_jac': 'nb iters existent solver', 'nb_iters_convjac': 'nb iters trained solver'}
-a = pd.concat([ts_32_l, ts_32_s, ts_64_l, ts_64_s])\
-.rename(columns=d)
-
-# <codecell>
-
-ta = a.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
-
-# <codecell>
-
-print(ta.to_latex(index=False))
-
-# <codecell>
-
-tal1 = ts_concat.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
-tal1['nb_layers'] = 1
-
-
-# <codecell>
-
-ta['nb_layers'] = 4
-ta
-
-# <codecell>
-
-list(final_results.columns)
 
 # <codecell>
 
@@ -542,14 +483,8 @@ cols = [
 ]
 final_results = pd.concat([l1, l2, l3, ta])[cols]
 
-# <codecell>
-
-print(final_results.to_latex(index=False))
+final_results.to_pickle('./data/final_test_results.pkl')
 
 # <codecell>
 
-
-
-# <codecell>
-
-
+final_results
