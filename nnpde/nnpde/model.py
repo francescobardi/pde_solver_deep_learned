@@ -43,8 +43,8 @@ class JacobyWithConv:
                  learning_rate=1e-6,
                  max_epochs=1000,
                  nb_layers=3,
-                 tol=1e-4,
-                 stable_count=5,
+                 tol=1e-6,
+                 stable_count=50,
                  N=16,
                  optimizer='SGD',
                  check_spectral_radius=False,
@@ -119,17 +119,20 @@ class JacobyWithConv:
 
             # Store lossses for visualization
             losses.append(total_loss)
-            prev_total_loss = total_loss
+            
 
             # Check convergence
             if np.abs(total_loss - prev_total_loss) < self.tol:
                 convergence_counter += 1
+                #print(convergence_counter)
+                #print(self.stable_count)
                 if convergence_counter > self.stable_count:
                     break
             else:
                 convergence_counter = 0
 
-
+            prev_total_loss = total_loss
+            
             # Display information every 100 iterations
             if n_epoch % 100 == 0:
                 logging.info(
