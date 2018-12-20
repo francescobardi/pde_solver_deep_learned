@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from nnpde.functions.helpers import check_dimensions
+from nnpde.helpers import check_dimensions
 from nnpde.utils.misc import apply_n_times
 
 def jacobi(A,

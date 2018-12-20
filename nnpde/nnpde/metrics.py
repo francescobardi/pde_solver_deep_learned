@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
-import nnpde.functions.iterative_methods as im
+
+import nnpde.iterative_methods as im
 
 
 def least_squares_loss(a, b):
