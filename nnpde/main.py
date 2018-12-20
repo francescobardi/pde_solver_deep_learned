@@ -32,7 +32,7 @@ import nnpde.model as M
 
 # <codecell>
 
-enable_logging(20)
+enable_logging(10)
 
 seed = 9 # Does not give problems
 torch.manual_seed(seed)
@@ -113,10 +113,6 @@ reload(M)
 
 hyper_models = grid_search_wrapper(base_parameters, grid_parameters) \
     + grid_search_wrapper(base_parameters, {"optimizer": ["Adadelta"]})
-
-# <codecell>
-
-[m.losses for m in hyper_models]
 
 # <codecell>
 
@@ -399,18 +395,22 @@ reload(PDEF)
 
 # <codecell>
 
+tol = 1e-4
+base_parameters
+
+# <codecell>
+
 mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 200, 'optimizer': 'Adadelta', 'nb_layers': 4}}).fit(problem_instances)
 
 # <codecell>
 
-tol = 1e-4
 tests_n10_g32 = MT.test_results_pd(mdl.net, 100, 32, tol=tol)
 tests_n10_g32.to_pickle('./data/grid_32.pkl')
 
 # <codecell>
 
 # takes 7m!
-test_results = MT.test_results_pd(mdl.net, 100, 64, tol=tol)
+test_results = MT.test_results_pd(mdl.net, 10, 64, tol=1e-4)
 test_results.to_pickle('./data/grid_64.pkl')
 test_results
 

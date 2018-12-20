@@ -7,9 +7,8 @@ from torch import nn
 import numpy as np
 import torch.nn.functional as F
 
-from nnpde import helpers
+from nnpde import helpers, metrics
 import nnpde.iterative_methods as im
-from nnpde import metrics
 from nnpde.utils.misc import chunks, set_seed
 
 
