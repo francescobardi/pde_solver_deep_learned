@@ -120,9 +120,8 @@ def compare_flops(grid_size, n_iter_jac, n_iter_conv, nb_layers):
        ratio of the number of flops for the convolution and jacobi method
 
     """
-
-    flop_conv = count_conv(grid_size, nb_layers) * n_iter_conv
-
     flop_jac = count_jac(grid_size) * n_iter_jac
+
+    flop_conv = flop_jac + count_conv(grid_size, nb_layers) * n_iter_conv
 
     return flop_conv/flop_jac
