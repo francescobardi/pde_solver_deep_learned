@@ -25,7 +25,6 @@ source activate <your chosen name>
 ├── environment.yml                          # environment file
 ├── nnpde
 │   ├── main.ipynb                           # main notebook, entry point
-│   ├── main_dev.ipynb                       # main dev notebook, playground
 │   └── nnpde
 │       ├── __init__.py
 │       ├── geometries.py                    # geometries: shapes and boundaries
