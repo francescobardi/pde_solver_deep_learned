@@ -49,6 +49,14 @@ source activate <your chosen name>
 
 The notebook files were converted using this [script](https://gist.github.com/samuelsmal/144e1204d646cd65ff8864d4b483f948), but should be viewed as a notebook.
 
+
+## General comments about the code
+
+The deep learning part is implemented in PyTorch, therefore when in doubt it's
+a PyTorch tensor.
+
+
+
 ## Authors (in alphabetical order)
 
 Francesco Bardi, Samuel Edler von Baussnern, Emiljano Gjiriti
