@@ -1,5 +1,5 @@
 # EPFL CS-433 Machine Learning: Project 2
-## ICLR 2018 Reproducibility Challenge: Learning Neural PDE Solvers with Convergence Guarantees 
+## ICLR 2018 Reproducibility Challenge: Learning Neural PDE Solvers with Convergence Guarantees
 
 This is the repository for the second project in the CS-433 class at EPFL.
 
@@ -25,15 +25,16 @@ source activate <your chosen name>
 ├── environment.yml                          # environment file
 ├── nnpde
 │   ├── main.ipynb                           # main notebook, entry point
+│   ├── main_dev.ipynb                       # main dev notebook, playground
 │   └── nnpde
 │       ├── __init__.py
 │       ├── geometries.py                    # geometries: shapes and boundaries
-│       ├── helpers.py
-│       ├── iterative_methods.py             # definition of iterative solvers
+│       ├── helpers.py                       # more project based helpers
+│       ├── iterative_methods.py             # definition of iterative solver
 │       ├── metrics.py
 │       ├── model.py                         # model definition
 │       ├── model_testing.py
-│       ├── problems.py                      # problems
+│       ├── problems.py                      # definition problems
 │       └── utils                            # various helpers
 │           ├── __init__.py
 │           ├── jupyter.ipynb
@@ -47,16 +48,18 @@ source activate <your chosen name>
     └── paper.pdf                            # paper on which this is based
 ```
 
-The notebook files were converted using this [script](https://gist.github.com/samuelsmal/144e1204d646cd65ff8864d4b483f948), but should be viewed as a notebook.
-
+The notebook files were converted using this
+[script](https://gist.github.com/samuelsmal/144e1204d646cd65ff8864d4b483f948),
+but should be viewed as a notebook.
 
 ## General comments about the code
 
 The deep learning part is implemented in PyTorch, therefore when in doubt it's
 a PyTorch tensor.
 
-
-
 ## Authors (in alphabetical order)
 
 Francesco Bardi, Samuel Edler von Baussnern, Emiljano Gjiriti
+
+fransesco.bardi@epfl.ch, samuel.edervonbaussnern@epfl.ch, emiljano.gjiriti@epfl.ch
+

@@ -3,6 +3,11 @@
 
 # <markdowncell>
 
+# <h1>Table of Contents<span class="tocSkip"></span></h1>
+# <div class="toc"><ul class="toc-item"><li><span><a href="#Imports" data-toc-modified-id="Imports-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Imports</a></span></li><li><span><a href="#Setup" data-toc-modified-id="Setup-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Setup</a></span></li><li><span><a href="#Hyper-parameter-search-learning-rate" data-toc-modified-id="Hyper-parameter-search-learning-rate-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Hyper-parameter search learning rate</a></span></li><li><span><a href="#Train-model-using-K-=-1,2,3,4,5" data-toc-modified-id="Train-model-using-K-=-1,2,3,4,5-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Train model using K = 1,2,3,4,5</a></span></li><li><span><a href="#Test-on-a-bigger-grid" data-toc-modified-id="Test-on-a-bigger-grid-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Test on a bigger grid</a></span></li><li><span><a href="#Plotting-solutions-for-domain-shapes" data-toc-modified-id="Plotting-solutions-for-domain-shapes-6"><span class="toc-item-num">6&nbsp;&nbsp;</span>Plotting solutions for domain shapes</a></span><ul class="toc-item"><li><span><a href="#Plot-Square-Domain" data-toc-modified-id="Plot-Square-Domain-6.1"><span class="toc-item-num">6.1&nbsp;&nbsp;</span>Plot Square Domain</a></span></li><li><span><a href="#Plot-L-shape" data-toc-modified-id="Plot-L-shape-6.2"><span class="toc-item-num">6.2&nbsp;&nbsp;</span>Plot L shape</a></span></li></ul></li><li><span><a href="#Error-evolution-with-iterations" data-toc-modified-id="Error-evolution-with-iterations-7"><span class="toc-item-num">7&nbsp;&nbsp;</span>Error evolution with iterations</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-8"><span class="toc-item-num">8&nbsp;&nbsp;</span>Model testing</a></span></li></ul></div>
+
+# <markdowncell>
+
 # # Imports
 
 # <codecell>
@@ -17,6 +22,7 @@ fix_layout()
 
 import os
 from importlib import reload
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -28,6 +34,7 @@ import torch.nn.functional as F
 from IPython.display import display
 
 import nnpde.iterative_methods as im
+from nnpde.metrics import least_squares_loss as LSE
 from nnpde import geometries, helpers
 from nnpde.utils.logs import enable_logging, logging 
 from nnpde.problems import DirichletProblem 
@@ -35,10 +42,11 @@ from nnpde.utils import plots
 import nnpde.model as M 
 import nnpde.model_testing as MT
 import nnpde.problems as PDEF
+from nnpde.grid_search import grid_search
 
 # <codecell>
 
-enable_logging(10)
+enable_logging(20)
 
 seed = 9 # Does not give problems
 torch.manual_seed(seed)
@@ -57,47 +65,7 @@ N = 16
 nb_problem_instances = 50
 problem_instances = [DirichletProblem(k=k) for k in np.random.randint(1, 20, nb_problem_instances)]
 
-# <markdowncell>
-
-# # Hyper-parameter search learning rate
-
-# <codecell>
-
-from itertools import product
-import logging
-
-def grid_search(mdl, base_parameters, grid_search_parameters, problem_instances):
-    """
-    Parameters
-    ==========
-    
-        mdl                     Model Class, 
-                                expected interface: `mdl(parameters).fit(problem_instances)`
-        base_parameters         dictonary of parameters which will applied for all models
-        grid_search_parameters  dictonary of <parameter>: [<value for parameter key>]
-        problem_instances       list of problems to train on
-    """
-    # the `list` is necessary if you want to print the below message
-    #parameters = list(product(*grid_search_parameters.values()))
-    #logging.debug('testing {} models! make sure that you have the power to run this!'.format(len(parameters)))
-    # `product` is equivalent to a nested for loop
-    parameters = product(*grid_search_parameters.values())
-
-    # the dict(zip(...)) part is necessary to ensure correct assignment
-    res = [mdl(**{**base_parameters, **dict(zip(grid_search_parameters.keys(), p))}).fit(problem_instances) for p in parameters]
-    return res
-
-# <codecell>
-
-def grid_search_wrapper(base_parameters, grid_search_parameters):
-    return grid_search(mdl=M.JacobyWithConv,
-                       base_parameters=base_parameters,
-                       grid_search_parameters=grid_search_parameters,
-                       problem_instances=problem_instances)
-
-# <codecell>
-
-# Net parameters
+# Net parameters, will also be used further down.
 base_parameters = {
     "nb_layers": 3,
     "max_epochs": 200,
@@ -111,12 +79,21 @@ grid_parameters = {
     "learning_rate": np.logspace(start=-6, stop=-4, num=7), #num=7 is good since it contains 1e-5
 }
 
+# <markdowncell>
+
+# # Hyper-parameter search learning rate
+
 # <codecell>
 
-reload(M)
+def grid_search_wrapper(base_parameters, grid_search_parameters):
+    return grid_search(mdl=M.JacobyWithConv,
+                       base_parameters=base_parameters,
+                       grid_search_parameters=grid_search_parameters,
+                       problem_instances=problem_instances)
+
+# <codecell>
 
 # Took 3m 13s on a Intel(R) Core(TM) i7-6700K CPU @ 4.00GHz
-
 hyper_models = grid_search_wrapper(base_parameters, grid_parameters) \
     + grid_search_wrapper(base_parameters, {"optimizer": ["Adadelta"]})
 
@@ -156,7 +133,7 @@ plt.ylabel('Total loss [-]', fontsize=14)
 plt.title('Loss evolution for different learning rates $\gamma$ \n $K=3$, $|\mathcal{D}|=50$, $|\mathcal{B}|=10$, max epochs=200')
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-hyper_fig.savefig('../report/figs/hyper.eps', bbox_inches='tight')
+#hyper_fig.savefig('../report/figs/hyper.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
@@ -204,17 +181,13 @@ plt.xlim([0, 300])
 plt.title('Loss evolution for different $K$ \n $|\mathcal{D}|=50$, $|\mathcal{B}|=10$, Adadelta, max epochs=1000')
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-comparison_K_fig.savefig('../report/figs/comparison_K.eps', bbox_inches='tight')
+#comparison_K_fig.savefig('../report/figs/comparison_K.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
 # <markdowncell>
 
 # # Test on a bigger grid
-
-# <codecell>
-
-from nnpde.metrics import least_squares_loss as LSE
 
 # <codecell>
 
@@ -248,7 +221,11 @@ for model in models:
 
 # <markdowncell>
 
-# # Plot square
+# # Plotting solutions for domain shapes 
+
+# <markdowncell>
+
+# ## Plot Square Domain
 
 # <codecell>
 
@@ -260,13 +237,13 @@ im = plt.imshow(ground_truth_square)
 plt.title("Square domain.")
 plt.colorbar(im)
 
-square_fig.savefig('../report/figs/square.eps', bbox_inches='tight')
+#square_fig.savefig('../report/figs/square.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
 # <markdowncell>
 
-# # Plot L shape
+# ## Plot L shape
 
 # <codecell>
 
@@ -278,7 +255,7 @@ im = plt.imshow(ground_truth_l_shape)
 plt.title("L-shape domain.")
 plt.colorbar(im)
 
-square_fig.savefig('../report/figs/l_shape.eps', bbox_inches='tight')
+#square_fig.savefig('../report/figs/l_shape.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
 
@@ -290,21 +267,6 @@ plt.show()
 
 tol = 1e-6
 net = models[2].net
-
-# <codecell>
-
-u_jacobi = initial_u
-err_jacobi = LSE(ground_truth, u_jacobi).item()
-errs_jacobi = [err_jacobi] 
-k_jacobi = 0
-
-while err_jacobi >= tol:
-    u_jacobi = im.jacobi_method(B_idx, B, f, u_jacobi, k = 1)
-    err_jacobi = LSE(ground_truth, u_jacobi).item()
-    errs_jacobi.append(err_jacobi)
-    k_jacobi += 1
-    
-print(f"Jacobi method: error of {tol} achieved after {k_jacobi} iterations.")
 
 # <codecell>
 
@@ -357,64 +319,9 @@ plt.ylim([tol, errors_H[0][0]])
 plt.title('Error evolution for different $K$\n Grid size ${0}x{0}$'.format(N))
 plt.grid(True, which = "both", linewidth = 0.5,  linestyle = "--")
 
-error_k_fig.savefig('../report/figs/error_k.eps', bbox_inches='tight')
+#error_k_fig.savefig('../report/figs/error_k.eps', bbox_inches='tight')
 plt.draw()
 plt.show()
-
-# <codecell>
-
-# This is not correct, but we have to look for a way to access the variables inside timeit
-
-print("needed {0} iterations (compared to {1}), ratio: {2}".format(k_count_old, k_count_new, k_count_old/k_count_new))
-
-# <codecell>
-
-print("the loss of the new method is {0}, compared to the pure-jacoby one: {1}. computed with {2} iterations".format(F.mse_loss(gtt, output), F.mse_loss(gtt, jacoby_pure), nb_iters))
-
-# <codecell>
-
-helpers.plot_solution(gtt,output,N)
-
-# <codecell>
-
-(gtt.view(N,N) - output.view(N,N)).mean()
-
-# <markdowncell>
-
-# ## Test on L-shape domain
-
-# <codecell>
-
-B_idx, B = geometries.l_shaped_geometry(N)
-
-# Set forcing term
-f = torch.ones(1,1,N,N)*1.0
-
-# Obtain solutions
-gtt = im.jacobi_method(B_idx, B, f, torch.ones(1,1,N,N), k = 10000)
-output = im.H_method(net, B_idx, B, f, torch.ones(1,1,N,N), k = 2000)
-
-# <codecell>
-
-helpers.plot_solution(gtt,output,N)
-
-# <codecell>
-
-compare_flops(16,k_count_new,k_count_old,3)
-
-# <codecell>
-
-Spectral radius. Don't remove Francesco will delete me
-
-# <codecell>
-
-B_idx = problem_instances[1].B_idx
-net = nn.Sequential(nn.Conv2d(1, 1, 3, padding=1, bias=False))
-G = helpers.build_G(B_idx)
-T = helpers.build_T(N)
-H = helpers.conv_net_to_matrix(net, N)
-I = np.eye(N)
-helpers.spectral_radius(T+G.dot(H).dot(T)-G.dot(H))
 
 # <markdowncell>
 
@@ -423,14 +330,23 @@ helpers.spectral_radius(T+G.dot(H).dot(T)-G.dot(H))
 # <codecell>
 
 tol = 1e-6
-base_parameters
+if base_parameters is None:
+    raise ValueError("Execute cell with base parameters")
 
+_base_data_path_ = '../report/data/'
+_base_fig_path_ = '../report/figs/'
+
+if not os.path.exists(_base_data_path_):
+    os.makedirs(_base_data_path_)
+    
 
 def obtain_test_results(mdl, grid_size, nb_tests=50, domain_shape='square', nb_layers=4, force=False, plot=False):
-    data_path = f'./data/nb_layers_{nb_layers}_grid_{grid_size}_domain_{domain_shape}.pkl'
+    data_path = f'{_base_data_path_}nb_layers_{nb_layers}_grid_{grid_size}_domain_{domain_shape}.pkl'
     
     if force or not os.path.exists(data_path):
         test_results = MT.test_results_pd(mdl, nb_tests, grid_size, tol=tol, convergence_tol=1e-12)
+        test_results['grid_size'] = grid_size
+        test_results['shape'] = domain_shape
         test_results.to_pickle(data_path)
     else:
         test_results = pd.read_pickle(data_path)
@@ -441,34 +357,24 @@ def obtain_test_results(mdl, grid_size, nb_tests=50, domain_shape='square', nb_l
         ax = sns.boxplot(data=test_results[['flops_ratio', 'cpu_time_ratio', 'iters_ratio']]\
                          .rename(columns={'flops_ratio': 'Ratio of FLOPS', 'cpu_time_ratio': 'Ratio of CPU time', 'iters_ratio': 'Ratio of #iterations'}), orient="h", palette="Set2")
         ax.set_title(f'Test results for grid size: {grid_size}')
-        plt.savefig(f'./data/grid_{grid_size}_domain_{domain_shape}.eps')
+        plt.savefig(f'{_base_fig_path_}grid_{grid_size}_domain_{domain_shape}.eps')
         display(ax)
     return test_results
 
-def agg_for_layer(nb_layers):
-    mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': nb_layers}}).fit(problem_instances)
 
-    ts_32_s = obtain_test_results(mdl, 32, nb_tests=20, nb_layers=nb_layers)
-    ts_32_l = obtain_test_results(mdl, 32, nb_tests=20, domain_shape='l_shape', nb_layers=nb_layers)
-    ts_64_s = obtain_test_results(mdl, 64, nb_tests=20, nb_layers=nb_layers)
-    ts_64_l = obtain_test_results(mdl, 32, nb_tests=20, domain_shape='l_shape', nb_layers=nb_layers)
-
-    ts_32_s['grid'] = '32'
-    ts_32_l['grid'] = '32'
-    ts_64_l['grid'] = '64'
-    ts_64_s['grid'] = '64'
-
-    ts_32_s['shape'] = 'square'
-    ts_32_l['shape'] = 'l-shape'
-    ts_64_l['shape'] = 'l-shape'
-    ts_64_s['shape'] = 'square'
+def agg_for_layer(base_parameters, nb_layers, problem_instances, grid_sizes, nb_tests=20):
+    mdl = M.JacobyWithConv(**{**base_parameters, **{'max_epochs': 1000, 'optimizer': 'Adadelta', 'nb_layers': nb_layers}})\
+           .fit(problem_instances)
+    
+    test_results = [obtain_test_results(mdl, grid_size=grid_size, domain_shape=shape, nb_tests=nb_tests, nb_layers=nb_layers, plot=True, force=True) 
+         for grid_size, shape in product(grid_sizes, ['l_shape', 'square'])]
 
     d = {'flops_ratio': 'FLOPS ratio', 'cpu_time_ratio': 'CPU time ratio', 'nb_iters_jac': 'nb iters existent solver', 'nb_iters_convjac': 'nb iters trained solver'}
-    ts_concat = pd.concat([ts_32_l, ts_32_s, ts_64_l, ts_64_s]).rename(columns=d)
+    ts_concat = pd.concat(test_results).rename(columns=d)
     ta = ts_concat.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
     ta['nb_layers'] = nb_layers
-    return ta
-
+    ts_concat['nb_layers'] = nb_layers
+    return ta, ts_concat
 
 # <codecell>
 
@@ -481,10 +387,20 @@ cols = [
  'nb iters existent solver',
  'nb iters trained solver'
 ]
-final_results = pd.concat([l1, l2, l3, ta])[cols]
 
-final_results.to_pickle('./data/final_test_results.pkl')
+#nb_problem_instances = 100
+#problem_instances_n16 = [DirichletProblem(k=k, N=16) for k in np.random.randint(1, 20, nb_problem_instances)]
+#problem_instances_n16 = [DirichletProblem(k=k, N=16) for k in np.random.randint(1, 20, nb_problem_instances)]
+
+ts = [agg_for_layer(base_parameters, grid_sizes=[32, 64], nb_layers=l, problem_instances=problem_instances)[0] for l in range(1, 6)]
+#final_results = pd.concat([agg_for_layer(l, problem_instances=problem_instances)[0] for l in range(1, 5)])[cols]
+
+#final_results.to_pickle('./data/final_test_results.pkl')
 
 # <codecell>
 
 final_results
+
+# <codecell>
+
+
