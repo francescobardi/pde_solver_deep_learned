@@ -9,6 +9,8 @@ import nnpde.iterative_methods as im
 class DirichletProblem:
     """Define a Dirichlet problem instance
 
+    The groud truth solution is computed on instantiation.
+
     Parameters
     ----------
     B_idx : tensor-like, shape = [1, 1, N, N]

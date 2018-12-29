@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from nnpde.metrics import least_squares_loss as LSE
-from nnpde.helpers import compare_flops
+from nnpde.helpers import flops_ratio
 from nnpde.problems import DirichletProblem
 import nnpde.iterative_methods as im
 from nnpde import metrics
@@ -35,7 +35,7 @@ def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, conver
     initial_u = torch.ones(1, 1, grid_size, grid_size)
 
     for i in range(n_tests):
-        # TODO This is stupid, it should not be here...
+        # TODO This is stupid, it should not be here... the problems should be instantiated outside
         problem_instance = DirichletProblem(
             N=grid_size, k_ground_truth=max_nb_iters, domain_type=domain_type)
         ground_truth = problem_instance.ground_truth
@@ -100,8 +100,8 @@ def _test_model_(model, n_tests, grid_size, tol=1e-6, max_nb_iters=50000, conver
         con_time = time.process_time() - start_time
         logging.debug(f'Test nb {i} done')
 
-        # TODO this is stupid
-        yield (count_jac, count_H, compare_flops(grid_size, count_jac, count_H, nb_layers), jac_time, con_time,
+        # TODO this is stupid, too many return values.
+        yield (count_jac, count_H, flops_ratio(grid_size, count_jac, count_H, nb_layers), jac_time, con_time,
                con_time / jac_time, loss_jac.item(), loss_H.item())
 
 
