@@ -4,7 +4,7 @@
 # <markdowncell>
 
 # <h1>Table of Contents<span class="tocSkip"></span></h1>
-# <div class="toc"><ul class="toc-item"><li><span><a href="#Imports" data-toc-modified-id="Imports-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Imports</a></span></li><li><span><a href="#Setup" data-toc-modified-id="Setup-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Setup</a></span></li><li><span><a href="#Hyper-parameter-search-learning-rate" data-toc-modified-id="Hyper-parameter-search-learning-rate-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Hyper-parameter search learning rate</a></span></li><li><span><a href="#Train-model-using-K-=-1,2,3,4,5" data-toc-modified-id="Train-model-using-K-=-1,2,3,4,5-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Train model using K = 1,2,3,4,5</a></span></li><li><span><a href="#Test-on-a-bigger-grid" data-toc-modified-id="Test-on-a-bigger-grid-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Test on a bigger grid</a></span></li><li><span><a href="#Plotting-solutions-for-domain-shapes" data-toc-modified-id="Plotting-solutions-for-domain-shapes-6"><span class="toc-item-num">6&nbsp;&nbsp;</span>Plotting solutions for domain shapes</a></span><ul class="toc-item"><li><span><a href="#Plot-Square-Domain" data-toc-modified-id="Plot-Square-Domain-6.1"><span class="toc-item-num">6.1&nbsp;&nbsp;</span>Plot Square Domain</a></span></li><li><span><a href="#Plot-L-shape" data-toc-modified-id="Plot-L-shape-6.2"><span class="toc-item-num">6.2&nbsp;&nbsp;</span>Plot L shape</a></span></li></ul></li><li><span><a href="#Error-evolution-with-iterations" data-toc-modified-id="Error-evolution-with-iterations-7"><span class="toc-item-num">7&nbsp;&nbsp;</span>Error evolution with iterations</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-8"><span class="toc-item-num">8&nbsp;&nbsp;</span>Model testing</a></span></li></ul></div>
+# <div class="toc"><ul class="toc-item"><li><span><a href="#Imports" data-toc-modified-id="Imports-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Imports</a></span></li><li><span><a href="#Setup" data-toc-modified-id="Setup-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Setup</a></span></li><li><span><a href="#Hyper-parameter-search-learning-rate" data-toc-modified-id="Hyper-parameter-search-learning-rate-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Hyper-parameter search learning rate</a></span></li><li><span><a href="#Train-model-using-K-=-1,2,3,4,5" data-toc-modified-id="Train-model-using-K-=-1,2,3,4,5-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Train model using K = 1,2,3,4,5</a></span></li><li><span><a href="#Test-on-a-bigger-grid" data-toc-modified-id="Test-on-a-bigger-grid-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Test on a bigger grid</a></span></li><li><span><a href="#Plotting-solutions-for-domain-shapes" data-toc-modified-id="Plotting-solutions-for-domain-shapes-6"><span class="toc-item-num">6&nbsp;&nbsp;</span>Plotting solutions for domain shapes</a></span><ul class="toc-item"><li><span><a href="#Plot-Square-Domain" data-toc-modified-id="Plot-Square-Domain-6.1"><span class="toc-item-num">6.1&nbsp;&nbsp;</span>Plot Square Domain</a></span></li><li><span><a href="#Plot-L-shape" data-toc-modified-id="Plot-L-shape-6.2"><span class="toc-item-num">6.2&nbsp;&nbsp;</span>Plot L shape</a></span></li></ul></li><li><span><a href="#Error-evolution-with-iterations" data-toc-modified-id="Error-evolution-with-iterations-7"><span class="toc-item-num">7&nbsp;&nbsp;</span>Error evolution with iterations</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-8"><span class="toc-item-num">8&nbsp;&nbsp;</span>Model testing</a></span><ul class="toc-item"><li><span><a href="#pre-bug-fix-results" data-toc-modified-id="pre-bug-fix-results-8.1"><span class="toc-item-num">8.1&nbsp;&nbsp;</span>pre bug fix results</a></span></li></ul></li></ul></div>
 
 # <markdowncell>
 
@@ -371,7 +371,7 @@ def agg_for_layer(base_parameters, nb_layers, problem_instances, grid_sizes, nb_
 
     d = {'flops_ratio': 'FLOPS ratio', 'cpu_time_ratio': 'CPU time ratio', 'nb_iters_jac': 'nb iters existent solver', 'nb_iters_convjac': 'nb iters trained solver'}
     ts_concat = pd.concat(test_results).rename(columns=d)
-    ta = ts_concat.groupby(['grid', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
+    ta = ts_concat.groupby(['grid_size', 'shape'])[list(d.values())].mean().reset_index().rename(columns={'grid': 'grid size'})
     ta['nb_layers'] = nb_layers
     ts_concat['nb_layers'] = nb_layers
     return ta, ts_concat
@@ -392,15 +392,39 @@ cols = [
 #problem_instances_n16 = [DirichletProblem(k=k, N=16) for k in np.random.randint(1, 20, nb_problem_instances)]
 #problem_instances_n16 = [DirichletProblem(k=k, N=16) for k in np.random.randint(1, 20, nb_problem_instances)]
 
-ts = [agg_for_layer(base_parameters, grid_sizes=[32, 64], nb_layers=l, problem_instances=problem_instances)[0] for l in range(1, 6)]
+ts = [agg_for_layer(base_parameters, grid_sizes=[32, 64], nb_layers=l, problem_instances=problem_instances) for l in range(1, 6)]
 #final_results = pd.concat([agg_for_layer(l, problem_instances=problem_instances)[0] for l in range(1, 5)])[cols]
 
 #final_results.to_pickle('./data/final_test_results.pkl')
 
 # <codecell>
 
-final_results
+agg, raw = zip(*ts)
+
+
+raw = pd.concat(raw)
+agg = pd.concat(agg)
+agg
 
 # <codecell>
 
+raw[['FLOPS ratio', 'CPU time ratio']].plot.box()
+plt.xticks(rotation=90)
 
+# <markdowncell>
+
+# ## pre bug fix results
+
+# <codecell>
+
+agg, raw = zip(*ts)
+
+
+raw = pd.concat(raw)
+agg = pd.concat(agg)
+agg
+
+# <codecell>
+
+raw[['FLOPS ratio', 'CPU time ratio']].plot.box()
+plt.xticks(rotation=90)
