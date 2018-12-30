@@ -29,7 +29,8 @@ def conv_layer_to_matrix(conv_layer, dim, kernel_size=3):
     """
     # TODO remove hardwiring to kernel size
     if kernel_size != 3:
-        raise NotImplementedError("Kernel size of size different of 3 is currently not supported.")
+        raise NotImplementedError(
+            "Kernel size of size different of 3 is currently not supported.")
 
     ks = [k.item() for k in conv_layer.view(9)]
 
@@ -95,7 +96,7 @@ def spectral_radius(X):
     return np.max(np.abs(np.linalg.eigvals(X)))
 
 
-def n_flops_conv_net_step(grid_size, kernel_size, n_layers=3):
+def n_flops_conv_net_step(grid_size, n_layers, kernel_size=3):
     """n_flops_conv_net_step Estimation on the number of flops taken by the convolution.
 
     Counting multiply-and-add computations as one flop.
@@ -141,6 +142,7 @@ def flops_ratio(grid_size, n_iter_jac, n_iter_conv, n_layers):
     """
     flop_jac = n_flops_jacoby_step(grid_size) * n_iter_jac
 
-    flop_conv = (n_flops_jacoby_step(grid_size) + n_flops_conv_net_step(grid_size, n_layers)) * n_iter_conv
+    flop_conv = (n_flops_jacoby_step(grid_size) +
+                 n_flops_conv_net_step(grid_size, n_layers)) * n_iter_conv
 
     return flop_conv / flop_jac
