@@ -1,5 +1,5 @@
 # EPFL CS-433 Machine Learning: Project 2
-## ICLR 2018 Reproducibility Challenge: Learning Neural PDE Solvers with Convergence Guarantees
+## ICLR 2019 Reproducibility Challenge: Learning Neural PDE Solvers with Convergence Guarantees
 
 This is the repository for the second project in the CS-433 class at EPFL.
 
