@@ -5,6 +5,8 @@ This is the repository for the second project in the CS-433 class at EPFL.
 
 We tried to reproduce the results of a paper handed for the ICLR conference: https://openreview.net/forum?id=rklaWn0qK7
 
+The link to our issue is: https://github.com/reproducibility-challenge/iclr_2019/issues/90
+
 ## Setup
 
 Execute:
