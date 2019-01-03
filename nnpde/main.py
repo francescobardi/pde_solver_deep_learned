@@ -3,8 +3,26 @@
 
 # <markdowncell>
 
+# # NOTE
+# 
+# This notebook is best viewed with some jupyter extensions:
+# 
+# ```
+# # snippet of impartant parts of `jupyter nbextension list`
+# Known nbextensions:
+#     notebook section
+#       ExecuteTime
+#       collapsible_headings
+#       hide_input
+#       toc2
+# ```
+# 
+# After `Imports` and `Setup` `Model testing` can be executed.
+
+# <markdowncell>
+
 # <h1>Table of Contents<span class="tocSkip"></span></h1>
-# <div class="toc"><ul class="toc-item"><li><span><a href="#Imports" data-toc-modified-id="Imports-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Imports</a></span></li><li><span><a href="#Setup" data-toc-modified-id="Setup-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Setup</a></span></li><li><span><a href="#Hyper-parameter-search-learning-rate" data-toc-modified-id="Hyper-parameter-search-learning-rate-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Hyper-parameter search learning rate</a></span></li><li><span><a href="#Train-model-using-K-=-1,2,3,4,5" data-toc-modified-id="Train-model-using-K-=-1,2,3,4,5-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Train model using K = 1,2,3,4,5</a></span></li><li><span><a href="#Test-on-a-bigger-grid" data-toc-modified-id="Test-on-a-bigger-grid-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Test on a bigger grid</a></span></li><li><span><a href="#Plotting-solutions-for-domain-shapes" data-toc-modified-id="Plotting-solutions-for-domain-shapes-6"><span class="toc-item-num">6&nbsp;&nbsp;</span>Plotting solutions for domain shapes</a></span><ul class="toc-item"><li><span><a href="#Plot-Square-Domain" data-toc-modified-id="Plot-Square-Domain-6.1"><span class="toc-item-num">6.1&nbsp;&nbsp;</span>Plot Square Domain</a></span></li><li><span><a href="#Plot-L-shape" data-toc-modified-id="Plot-L-shape-6.2"><span class="toc-item-num">6.2&nbsp;&nbsp;</span>Plot L shape</a></span></li></ul></li><li><span><a href="#Error-evolution-with-iterations" data-toc-modified-id="Error-evolution-with-iterations-7"><span class="toc-item-num">7&nbsp;&nbsp;</span>Error evolution with iterations</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-8"><span class="toc-item-num">8&nbsp;&nbsp;</span>Model testing</a></span><ul class="toc-item"><li><span><a href="#pre-bug-fix-results" data-toc-modified-id="pre-bug-fix-results-8.1"><span class="toc-item-num">8.1&nbsp;&nbsp;</span>pre bug fix results</a></span></li></ul></li></ul></div>
+# <div class="toc"><ul class="toc-item"><li><span><a href="#NOTE" data-toc-modified-id="NOTE-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>NOTE</a></span></li><li><span><a href="#Imports" data-toc-modified-id="Imports-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Imports</a></span></li><li><span><a href="#Setup" data-toc-modified-id="Setup-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Setup</a></span></li><li><span><a href="#Hyper-parameter-search-learning-rate" data-toc-modified-id="Hyper-parameter-search-learning-rate-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Hyper-parameter search learning rate</a></span></li><li><span><a href="#Train-model-using-K-=-1,2,3,4,5" data-toc-modified-id="Train-model-using-K-=-1,2,3,4,5-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Train model using K = 1,2,3,4,5</a></span></li><li><span><a href="#Test-on-a-bigger-grid" data-toc-modified-id="Test-on-a-bigger-grid-6"><span class="toc-item-num">6&nbsp;&nbsp;</span>Test on a bigger grid</a></span></li><li><span><a href="#Plotting-solutions-for-domain-shapes" data-toc-modified-id="Plotting-solutions-for-domain-shapes-7"><span class="toc-item-num">7&nbsp;&nbsp;</span>Plotting solutions for domain shapes</a></span><ul class="toc-item"><li><span><a href="#Plot-Square-Domain" data-toc-modified-id="Plot-Square-Domain-7.1"><span class="toc-item-num">7.1&nbsp;&nbsp;</span>Plot Square Domain</a></span></li><li><span><a href="#Plot-L-shape" data-toc-modified-id="Plot-L-shape-7.2"><span class="toc-item-num">7.2&nbsp;&nbsp;</span>Plot L shape</a></span></li></ul></li><li><span><a href="#Error-evolution-with-iterations" data-toc-modified-id="Error-evolution-with-iterations-8"><span class="toc-item-num">8&nbsp;&nbsp;</span>Error evolution with iterations</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-9"><span class="toc-item-num">9&nbsp;&nbsp;</span>Model testing</a></span><ul class="toc-item"><li><span><a href="#Tables-plots-for-report" data-toc-modified-id="Tables-plots-for-report-9.1"><span class="toc-item-num">9.1&nbsp;&nbsp;</span>Tables plots for report</a></span></li></ul></li></ul></div>
 
 # <markdowncell>
 
@@ -44,6 +62,10 @@ import nnpde.model_testing as MT
 import nnpde.problems as PDEF
 from nnpde.grid_search import grid_search
 
+# <markdowncell>
+
+# # Setup
+
 # <codecell>
 
 enable_logging(20)
@@ -51,10 +73,6 @@ enable_logging(20)
 seed = 9 # Does not give problems
 torch.manual_seed(seed)
 np.random.seed(seed)
-
-# <markdowncell>
-
-# # Setup
 
 # <codecell>
 
@@ -406,25 +424,27 @@ raw = pd.concat(raw)
 agg = pd.concat(agg)
 agg
 
-# <codecell>
-
-raw[['FLOPS ratio', 'CPU time ratio']].plot.box()
-plt.xticks(rotation=90)
-
 # <markdowncell>
 
-# ## pre bug fix results
+# ## Tables plots for report
 
 # <codecell>
 
-agg, raw = zip(*ts)
+from nnpde.utils.misc import flatten
+_t = raw.groupby(['nb_layers', 'grid_size', 'shape'])['FLOPS ratio', 'CPU time ratio', 'nb iters ratio'].agg(['mean', 'std'])
+_t = pd.DataFrame(data=_t.reset_index().values, columns=['nb_layers', 'grid_size', 'shape'] + flatten([[c + ' mean', c + ' std'] for c in ['FLOPS ratio', 'CPU time ratio', 'nb iters ratio']]))
+for c in ['FLOPS ratio', 'CPU time ratio', 'nb iters ratio']:
+    _t[c] = _t[[p for p in _t.columns if c in p]].apply(lambda row: "\${0:1.3f}\pm{1:1.3f}\$".format(row[0], row[1]), axis=1)
 
-
-raw = pd.concat(raw)
-agg = pd.concat(agg)
-agg
+print(_t[['nb_layers', 'grid_size', 'shape', 'FLOPS ratio', 'CPU time ratio', 'nb iters ratio']]\
+    .set_index(['nb_layers', 'grid_size', 'shape']).to_latex(multirow=True))
 
 # <codecell>
 
-raw[['FLOPS ratio', 'CPU time ratio']].plot.box()
-plt.xticks(rotation=90)
+raw['nb iters ratio'] = raw['nb iters trained solver'] / raw['nb iters existent solver']
+ax = raw[['FLOPS ratio', 'CPU time ratio', 'nb iters ratio']].plot.box()
+ax.set_xticklabels(['FLOPS', 'CPU time', '#iterations'])
+ax.set_xlabel('ratios')
+plt.ylabel('learned vs existent')
+plt.savefig(f'{_base_fig_path_}/ratio_plot.eps')
+#plt.xticks(rotation=45)
