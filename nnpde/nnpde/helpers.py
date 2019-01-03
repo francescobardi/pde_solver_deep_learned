@@ -142,7 +142,6 @@ def flops_ratio(grid_size, n_iter_jac, n_iter_conv, n_layers):
     """
     flop_jac = n_flops_jacoby_step(grid_size) * n_iter_jac
 
-    flop_conv = (n_flops_jacoby_step(grid_size) +
-                 n_flops_conv_net_step(grid_size, n_layers)) * n_iter_conv
+    flop_conv = (n_flops_jacoby_step(grid_size) + n_flops_conv_net_step(grid_size=grid_size, n_layers=n_layers)) * n_iter_conv
 
     return flop_conv / flop_jac
