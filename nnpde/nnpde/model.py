@@ -120,12 +120,11 @@ class JacobyWithConv:
             # Store lossses for visualization
             losses.append(total_loss)
 
-
             # Check convergence
             if np.abs(total_loss - prev_total_loss) < self.tol:
                 convergence_counter += 1
-                #print(convergence_counter)
-                #print(self.stable_count)
+                # print(convergence_counter)
+                # print(self.stable_count)
                 if convergence_counter > self.stable_count:
                     break
             else:
@@ -142,6 +141,5 @@ class JacobyWithConv:
         self.losses = losses
         logging.info(
             f"Convergence reached in {n_epoch} epochs with total loss {total_loss}")
-        return self
 
         return self
