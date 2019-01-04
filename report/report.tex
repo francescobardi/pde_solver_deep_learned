@@ -30,7 +30,7 @@
 % Non-anonymous submissions will be rejected without review.
 
 \author{Fransesco Bardi, Samuel Edler von Baussnern, Emiljano Gjiriti \\
-\texttt{\{fransesco.bardi, samuel.edervonbaussnern, emiljano.gjiriti\}@epfl.ch}}
+\texttt{\{fransesco.bardi, samuel.edlervonbaussnern, emiljano.gjiriti\}@epfl.ch}}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -44,14 +44,14 @@
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
 
-% \iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
+\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
 
 
 \maketitle
 
 \begin{abstract}
-This paper is part of the ICLR Reproducibility Challenge 2019. We tried to replicate the results and algorithm for training an iterative partial differential equation solver by interpreting the solver as a linear convolutional neural network and optimizing the weights of the convolutional kernels. We can replicate the results of the original paper \cite{original_paper}\footnote{We based our this report on the version from the 10 October 2018. We noted no differences to the newest version from the 23 November 2018 with regard to this report.}, obtaining a general solver, which generalizes well to a wide variety of geometries and boundary conditions, while achieving high speed ups compared to the baseline solver and guaranteeing convergence.\footnote{The code, written in Python using PyTorch, can be found on Github: \url{https://github.com/francescobardi/mL18}}
+This paper is part of the ICLR Reproducibility Challenge 2019. We tried to replicate the results and algorithm for training an iterative partial differential equation solver by interpreting the solver as a linear convolutional neural network and optimizing the weights of the convolutional kernels. We can replicate the results of the original paper \cite{original_paper}\footnote{We based our this report on the version from the 10 October 2018. We noted no differences to the newest version from the 23 November 2018 with regard to this report.}, obtaining a general solver, which generalizes well to a wide variety of geometries and boundary conditions, while achieving high speed ups compared to the baseline solver and guaranteeing convergence.\footnote{The code, written in Python using PyTorch, can be found on Github: \url{https://github.com/francescobardi/pde_solver_deep_learned}}
 \end{abstract}
 
 \section{Introduction}
@@ -382,7 +382,7 @@ The L-shaped domain is created by removing a smaller square from one of the edge
 
 In Figure \ref{fig:error_K} we shows how the error w.r.t the ground truth solution evolves with the number of iterations $k$ for the obtained solvers ($K=\{1,2,3,4,5\}$) and the Jacobi method. The learned solvers clearly outperform the Jacobi method, however we need better metrics in order to fairly compare the different models.
 
-Both solvers were evaluated on three metrics: the number of iterations, ratio of FLOPS and ratio of CPU-time until required tolerance is reached. The number of flops were calculated assuming both solvers would be implemented using convolutional operators. This results in 4 \textit{multiply-add} operations for each element in the grid for the Jacobi iteration, whereas the learned solver exhibits 9 \textit{multiply-add} operations. This is the same measurement as reported in the original paper, which is an estimation of the FLOPS taken. In addition to the paper we measured the CPU-time. Which deemed us to be a less error-prone and more reliable measure, nevertheless both ratios gave comparable results.
+Both solvers were evaluated on three metrics: the number of iterations, ratio of FLOPS and ratio of CPU-time until required tolerance is reached. The number of flops were calculated assuming both solvers would be implemented using convolutional operators. This results in 4 \textit{multiply-add} operations for each element in the grid for the Jacobi iteration, whereas the learned solvers exhibit $4+9K$ \textit{multiply-add} operations. This is the same measurement as reported in the original paper, which is an estimation of the FLOPS taken. In addition to the paper we measured the CPU-time, which deemed us to be a less error-prone and more reliable measure, nevertheless both ratios gave comparable results.
 
 As can be seen in Table \ref{tab:best_model_results} the trained solver was considerably faster than the existent solver, showing a much quicker conversion than the baseline model. Thus replicating the given results in the original paper. The highest speed-up is achieved by the 5-layer network.
 
@@ -404,11 +404,11 @@ As can be seen in Table \ref{tab:best_model_results} the trained solver was cons
 
 \begin{table}[h]
     \centering
-    \caption{Test results of solver trained on a $16\times16$ grid with Adadelta as optimizer. Sample size for each test of 20, number of iterations was counted until a difference to the ground truth solution of $1e-6$ or a convergence differnce of $1e-12$ where achieved. Shown are the mean and the standard deviation.\\}
+    \caption{Test results of solver trained on a $16\times16$ grid with Adadelta as optimizer. Sample size for each test of 20, number of iterations was counted until a difference to the ground truth solution of $1e-6$ or a convergence difference of $1e-12$ were achieved. Shown are the mean and the standard deviation.\\}
 \begin{tabular}{lllccc}
 \toprule
   & & & \multicolumn{3}{c}{ratios: $\frac{\text{trained solver}}{\text{existent solver}}$} \\ \cmidrule(lr){4-6}
- \thead{\#layers} & \thead{grid size} & \thead{geometry} & \thead{FLOPS} &  \thead{CPU time [s]} &  \thead{\#iterations} \\
+ \thead{$K$} & \thead{Grid size} & \thead{Geometry} & \thead{FLOPS} &  \thead{CPU time [s]} &  \thead{\#iterations}$k$ \\
 \midrule
 \multirow{4}{*}{1} & \multirow{2}{*}{32} & l\_shape &  $0.688\pm0.001$ &  $0.308\pm0.064$ &  $0.212\pm0.000$ \\
   &    & square &  $0.688\pm0.000$ &  $0.332\pm0.097$ &  $0.212\pm0.000$ \\
@@ -455,7 +455,7 @@ boundary conditions. This is the reason why our work was focused on reproducing 
 
 \section{Conclusion \& Future work}
 
-We could partially confirm the results reported in the original paper, not every result was reproducible either through lack of time or certainty in how these results where achieved or measured. The trained solver was able to generalize well to the presented different sizes, geometries and boundary values, while using less resources compared to the standard solver.
+We could partially confirm the results reported in the original paper, not every result was reproducible either through lack of time or certainty in how these results were achieved or measured. The trained solver was able to generalize well to the presented different sizes, geometries and boundary values, while using less resources compared to the standard solver.
 
 In the future work we would like to improve the design of the solver and the experiments in order to gain more confidence in the presented approach. For example $\mathcal{H}$ is fixed for each iteration, one could imagine a solver with different $\mathcal{H}$ for different iterations up to a certain threshold. We did not have the opportunity to test the solver using the MultiGrid method, nor the square-Poisson problem.
 It is not clear how the cylinder domain was implemented in a finite difference framework, whether radial coordinates or a non uniform grid were used.
