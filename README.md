@@ -24,6 +24,7 @@ source activate <your chosen name>
 ## Structure
 
 ```
+# Note: not everything is listed here, use this as a guidance.
 ├── environment.yml                          # environment file
 ├── nnpde
 │   ├── main.ipynb                           # main notebook, entry point
