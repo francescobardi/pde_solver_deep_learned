@@ -37,15 +37,14 @@
 \newcommand{\fix}{\marginpar{FIX}}
 \newcommand{\new}{\marginpar{NEW}}
 
-\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
 
 \input{header.tex}
-\maketitle
-
 \begin{abstract}
 This paper is part of the ICLR Reproducibility Challenge 2019. We tried to replicate the results and algorithm for training an iterative partial differential equation solver by interpreting the solver as a linear convolutional neural network and optimizing the weights of the convolutional kernels. We can replicate the results of the original paper \cite{original_paper}\footnote{We based our this report on the version from the 10 October 2018. We noted no differences to the newest version from the 23 November 2018 with regard to this report.}, obtaining a general solver, which generalizes well to a wide variety of geometries and boundary conditions, while achieving high speed ups compared to the baseline solver and guaranteeing convergence.\footnote{The code, written in Python using PyTorch, can be found on Github: \url{https://github.com/francescobardi/pde_solver_deep_learned}}
 \end{abstract}
+
+
 
 \section{Introduction}
 
