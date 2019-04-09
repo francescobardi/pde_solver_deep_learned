@@ -397,7 +397,7 @@ As can be seen in Table \ref{tab:best_model_results} the trained solver was cons
 \begin{table}[h]
     \centering
     \caption{Test results of solver trained on a $16\times16$ grid with Adadelta as optimizer. Sample size for each test of 20, number of iterations was counted until a difference to the ground truth solution of $1e-6$ or a convergence difference of $1e-12$ were achieved. Shown are the mean and the standard deviation.\\}
-
+\resizebox{230}{!}{
 \begin{tabular}{lllccc}
 \toprule
   & & & \multicolumn{3}{c}{ratios: $\frac{\text{trained solver}}{\text{existent solver}}$} \\ \cmidrule(lr){4-6}
@@ -433,7 +433,7 @@ As can be seen in Table \ref{tab:best_model_results} the trained solver was cons
   & \multirow{2}{*}{64} & l\_shape &  $0.412\pm0.001$ &  $0.088\pm0.012$ &  $0.034\pm0.000$ \\
   &    & square &  $0.410\pm0.007$ &  $0.091\pm0.023$ &  $0.033\pm0.001$ \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
     \label{tab:best_model_results}
 \end{table}
 
