@@ -4,28 +4,13 @@
 %% Released under a Creative Commons Attribution 4.0 International license.
 %% ----------------------------------------------------------------------------
 %% Dependencies:
-%%  * metadata-draft.tex or metadata-final.tex (defined in \metadataFILE)
+%%  * metadata.tex 
 %%  * header.tex
 %%  * content.tex
 %% ----------------------------------------------------------------------------
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{rescience}[2019/03/05 Style for ReScience articles]
-
-\newif\ifisfinal
-
-\DeclareOption{final}{\isfinaltrue}
-\DeclareOption{draft}{\isfinalfalse}
-
-\ExecuteOptions{draft}
-
-\ProcessOptions\relax
-
-\ifisfinal
-\def \metadataFILE{metadata-final.tex}
-\else
-\def \metadataFILE{metadata-draft.tex}
-\fi
+\ProvidesClass{rescience}[2019/04/12 Style for ReScience articles]
 
 \LoadClass[a4paper, oneside, 10pt]{article}
 
@@ -70,37 +55,41 @@
 % XeLaTeX
 \RequirePackage{fontspec}
 \defaultfontfeatures{Ligatures=TeX}
- \setmainfont{Source Serif Pro}[
-  UprightFont=Source Serif Pro Light,
-  ItalicFont = Source Serif Pro Light,
-  ItalicFeatures={FakeSlant=0.2},
-  BoldFont = Source Serif Pro,
-  BoldItalicFeatures={FakeSlant=0.2}
+\setmainfont{Source Serif Pro}[
+  Path = ./source-serif-pro/SourceSerifPro-, Extension = .otf,
+  UprightFont= Light,
+  ItalicFont = LightIt,
+  BoldFont   = Regular,
+  BoldItalicFont = It,
 ]
 \setsansfont{Roboto Condensed}[
-  UprightFont = *-Light,
-  BoldFont = *-Regular
+  Path = ./roboto/RobotoCondensed-, Extension = .ttf,
+  UprightFont = Light,
+  BoldFont = Regular
 ]
 
 \setmonofont{Source Code Pro}[
-  Extension = .ttf,
-  UprightFont = font-Light,
-  BoldFont = font-Regular
+  Path = ./source-code-pro/SourceCodePro-, Extension = .otf,
+  UprightFont = Light,
+  BoldFont = Regular
 ]
 
 \newfontfamily\RobotoCon{Roboto Condensed}[
-  UprightFont = *-Regular,
-  BoldFont = *-Bold
+  Path = ./roboto/RobotoCondensed-, Extension = .ttf,
+  UprightFont = Regular,
+  BoldFont = Bold
 ]  
 
 \newfontfamily\Roboto{Roboto}[
-  UprightFont = *-Regular,
-  BoldFont = *-Black
+  Path = ./roboto/Roboto-, Extension = .ttf,
+  UprightFont = Regular,
+  BoldFont = Black
 ]  
 
 \newfontfamily\SpaceRoboto{Roboto}[
-  UprightFont = *-Regular,
-  BoldFont = *-Medium,
+  Path = ./roboto/Roboto-, Extension = .ttf,
+  UprightFont = Regular,
+  BoldFont = Medium,
   UprightFeatures={LetterSpace=35},
   BoldFeatures={LetterSpace=35}
 ]  
@@ -274,7 +263,7 @@
 
 
 % --- Headers & footers -------------------------------------------------------
-\input{\metadataFILE}
+\input{metadata.tex}
 
 \RequirePackage{fancyhdr}
 \pagestyle{fancy}
